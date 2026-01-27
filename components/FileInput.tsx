@@ -11,6 +11,7 @@ interface FileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const FileInput: React.FC<FileInputProps> = ({ label, id, error, file, showPreview, onClear, ...props }) => {
     const [preview, setPreview] = useState<string | null>(null);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false); // New State
     const errorMsg = Array.isArray(error) ? error[0] : error;
 
     useEffect(() => {
@@ -22,9 +23,28 @@ const FileInput: React.FC<FileInputProps> = ({ label, id, error, file, showPrevi
         setPreview(null);
     }, [file, showPreview]);
     
-    const errorClass = 'border-red-500 bg-red-50 ring-red-100';
+    // Auto reset confirm dialog if file changes (e.g. re-upload)
+    useEffect(() => {
+        if (!file) setShowConfirmDelete(false);
+    }, [file]);
 
     const isPdf = file?.type === 'application/pdf';
+
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowConfirmDelete(true);
+    };
+
+    const confirmDelete = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (onClear) onClear();
+        setShowConfirmDelete(false);
+    };
+
+    const cancelDelete = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowConfirmDelete(false);
+    };
 
     return (
         <div className="w-full">
@@ -33,16 +53,38 @@ const FileInput: React.FC<FileInputProps> = ({ label, id, error, file, showPrevi
             </label>
             <div className={`mt-1 relative flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-2xl transition-all ${file ? 'border-primary-400 bg-primary-50' : errorMsg ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:border-primary-300'}`}>
                 
-                {/* Remove Button */}
+                {/* REMOVE BUTTON & CONFIRMATION OVERLAY */}
                 {file && onClear && (
-                    <button 
-                        type="button" 
-                        onClick={(e) => { e.preventDefault(); onClear(); }}
-                        className="absolute top-2 right-2 p-1 bg-white text-red-500 rounded-full shadow-sm hover:bg-red-50 border border-slate-200 z-10 transition-colors"
-                        title="Hapus File"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+                    <>
+                        {!showConfirmDelete ? (
+                            <button 
+                                type="button" 
+                                onClick={handleDeleteClick}
+                                className="absolute top-2 right-2 p-1 bg-white text-red-500 rounded-full shadow-sm hover:bg-red-50 border border-slate-200 z-10 transition-colors"
+                                title="Hapus File"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        ) : (
+                            <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl animate-in fade-in duration-200">
+                                <p className="text-xs font-bold text-slate-700 mb-3">Hapus file ini?</p>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={cancelDelete}
+                                        className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button 
+                                        onClick={confirmDelete}
+                                        className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 shadow-md shadow-red-500/20"
+                                    >
+                                        Ya, Hapus
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {preview ? (
@@ -69,7 +111,7 @@ const FileInput: React.FC<FileInputProps> = ({ label, id, error, file, showPrevi
                 )}
                 
                 {file && !preview && (
-                    <div className="mb-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 max-w-full">
+                    <div className="mb-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 max-w-full z-0">
                         {!isPdf && <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
                         <div className="text-left overflow-hidden">
                             <p className="text-xs font-bold text-slate-700 truncate">{file.name}</p>
@@ -78,7 +120,7 @@ const FileInput: React.FC<FileInputProps> = ({ label, id, error, file, showPrevi
                     </div>
                 )}
                 
-                <div className="text-center">
+                <div className="text-center z-0">
                     <label htmlFor={id} className="cursor-pointer">
                         {!file && <span className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors">
                              Klik untuk Unggah

@@ -275,6 +275,23 @@ const App: React.FC = () => {
         }
     }, [formData]);
 
+    // NEW HELPER: Better Scroll to Error
+    const scrollToError = (errorKey: string) => {
+        const element = document.getElementById(errorKey);
+        if (element) {
+            // Calculate offset to avoid being hidden by sticky headers or floating buttons
+            // Default browser scrollIntoView center is sometimes too low on mobile
+            const offset = 120; 
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth"
+            });
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!isOnline) { addToast('error', 'Gagal Mengirim', 'Koneksi internet terputus.'); return; }
@@ -285,7 +302,7 @@ const App: React.FC = () => {
         if (!result.success) {
             setErrors(result.error.flatten().fieldErrors as FormErrors);
             const firstError = Object.keys(result.error.flatten().fieldErrors)[0];
-            document.getElementById(firstError)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            scrollToError(firstError); // Use new scroll logic
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -356,7 +373,8 @@ const App: React.FC = () => {
         setErrors(validationErrors);
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
-             document.getElementById(Object.keys(validationErrors)[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+             const firstError = Object.keys(validationErrors)[0];
+             scrollToError(firstError); // Use new scroll logic
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }

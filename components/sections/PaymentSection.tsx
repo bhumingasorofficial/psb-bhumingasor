@@ -13,6 +13,42 @@ interface Props {
 const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, handleFileClear }) => {
     const [copied, setCopied] = useState(false);
 
+    // LOGIKA GELOMBANG OTOMATIS
+    const currentMonth = new Date().getMonth(); // 0 = Jan, 1 = Feb, ...
+    
+    // Tentukan Gelombang Aktif
+    // Gel 1: Jan (0), Feb (1), Mar (2)
+    // Gel 2: Apr (3), Mei (4)
+    // Gel 3: Jun (5), Jul (6)
+    // Default ke 1 jika diluar bulan tersebut (misal testing di Des)
+    let activeWave = 1; 
+    if (currentMonth >= 0 && currentMonth <= 2) activeWave = 1;
+    else if (currentMonth >= 3 && currentMonth <= 4) activeWave = 2;
+    else if (currentMonth >= 5 && currentMonth <= 6) activeWave = 3;
+    
+    // Helper function untuk style kolom
+    const getColumnStyle = (wave: number) => {
+        const isActive = wave === activeWave;
+        if (isActive) {
+            return "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500 ring-inset ring-opacity-50 relative z-10";
+        }
+        return "bg-stone-50 text-stone-400 opacity-60 grayscale-[0.5]";
+    };
+
+    const getHeaderStyle = (wave: number) => {
+        const isActive = wave === activeWave;
+        if (isActive) {
+            return "bg-emerald-600 text-white shadow-md relative overflow-hidden";
+        }
+        return "bg-stone-100 text-stone-500";
+    };
+
+    const ActiveBadge = () => (
+        <div className="absolute top-0 right-0 left-0 bg-yellow-400 text-yellow-900 text-[9px] font-black uppercase tracking-widest py-0.5 animate-pulse shadow-sm">
+            Sedang Berlangsung
+        </div>
+    );
+
     const handleCopy = () => {
         navigator.clipboard.writeText('122901000279561');
         setCopied(true);
@@ -32,65 +68,84 @@ const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, h
             </div>
 
             {/* Tabel Rincian Biaya */}
-            <div className="overflow-hidden rounded-xl border border-stone-200 shadow-sm">
-                <div className="bg-emerald-600 px-4 py-3 text-white text-center">
+            <div className="overflow-hidden rounded-xl border border-stone-200 shadow-sm relative">
+                <div className="bg-emerald-800 px-4 py-3 text-white text-center">
                     <h4 className="font-bold text-lg uppercase tracking-wider">BIAYA PENDAFTARAN SANTRI BARU</h4>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-stone-50 text-stone-700 font-bold uppercase text-xs border-b border-stone-200">
+                <div className="overflow-x-auto pb-2">
+                    <table className="w-full text-sm text-left border-collapse">
+                        <thead className="text-xs border-b border-stone-200">
                             <tr>
-                                <th className="px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap">Rincian Biaya</th>
-                                <th className="px-4 py-3 text-center border-r border-stone-200 bg-emerald-50 text-emerald-800 whitespace-nowrap">
-                                    Gelombang 1<br/><span className="text-[10px] font-normal normal-case opacity-75">Januari - Maret</span>
+                                <th className="px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap bg-stone-50 text-stone-700 font-bold w-1/4">
+                                    RINCIAN BIAYA
                                 </th>
-                                <th className="px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap">
-                                    Gelombang 2<br/><span className="text-[10px] font-normal normal-case text-stone-500">April - Mei</span>
+                                <th className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap transition-all ${getHeaderStyle(1)} w-1/4`}>
+                                    {activeWave === 1 && <ActiveBadge />}
+                                    <div className={activeWave === 1 ? "mt-2" : ""}>
+                                        <span className="font-bold text-sm block">GELOMBANG 1</span>
+                                        <span className="text-[10px] font-normal block opacity-90 mt-0.5">Januari - Maret</span>
+                                    </div>
                                 </th>
-                                <th className="px-4 py-3 text-center whitespace-nowrap">
-                                    Gelombang 3<br/><span className="text-[10px] font-normal normal-case text-stone-500">Juni - Juli</span>
+                                <th className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap transition-all ${getHeaderStyle(2)} w-1/4`}>
+                                    {activeWave === 2 && <ActiveBadge />}
+                                    <div className={activeWave === 2 ? "mt-2" : ""}>
+                                        <span className="font-bold text-sm block">GELOMBANG 2</span>
+                                        <span className="text-[10px] font-normal block opacity-90 mt-0.5">April - Mei</span>
+                                    </div>
+                                </th>
+                                <th className={`px-4 py-4 text-center whitespace-nowrap transition-all ${getHeaderStyle(3)} w-1/4`}>
+                                    {activeWave === 3 && <ActiveBadge />}
+                                    <div className={activeWave === 3 ? "mt-2" : ""}>
+                                        <span className="font-bold text-sm block">GELOMBANG 3</span>
+                                        <span className="text-[10px] font-normal block opacity-90 mt-0.5">Juni - Juli</span>
+                                    </div>
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-200 text-stone-800 font-medium">
+                            {/* Baris Pendaftaran */}
                             <tr>
                                 <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Pendaftaran</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 bg-emerald-50/50 whitespace-nowrap">Rp. 150.000</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap">Rp. 250.000</td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap">Rp. 350.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 150.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 250.000</td>
+                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 350.000</td>
                             </tr>
+                            {/* Baris Almari */}
                             <tr>
                                 <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Almari</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 bg-emerald-50/50 whitespace-nowrap">Rp. 350.000</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap">Rp. 350.000</td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap">Rp. 350.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 350.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 350.000</td>
+                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 350.000</td>
                             </tr>
+                            {/* Baris Kitab */}
                             <tr>
                                 <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Kitab</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 bg-emerald-50/50 whitespace-nowrap">Rp. 200.000</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap">Rp. 200.000</td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap">Rp. 200.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 200.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 200.000</td>
+                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 200.000</td>
                             </tr>
+                            {/* Baris Seragam */}
                             <tr>
                                 <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Seragam</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 bg-emerald-50/50 whitespace-nowrap">Rp. 300.000</td>
-                                <td className="px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap">Rp. 300.000</td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap">Rp. 300.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 300.000</td>
+                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 300.000</td>
+                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 300.000</td>
                             </tr>
-                            <tr className="bg-emerald-50 text-emerald-900 font-bold border-t-2 border-emerald-200">
-                                <td className="px-4 py-3 text-center border-r border-emerald-200 whitespace-nowrap">TOTAL</td>
-                                <td className="px-4 py-3 text-center border-r border-emerald-200 bg-emerald-100 whitespace-nowrap">Rp. 1.000.000</td>
-                                <td className="px-4 py-3 text-center border-r border-emerald-200 whitespace-nowrap">Rp. 1.100.000</td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap">Rp. 1.200.000</td>
+                            {/* TOTAL ROW */}
+                            <tr className="border-t-2 border-stone-300">
+                                <td className="px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap bg-stone-800 text-white font-bold">TOTAL</td>
+                                <td className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap font-black text-lg ${activeWave === 1 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. 1.000.000</td>
+                                <td className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap font-black text-lg ${activeWave === 2 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. 1.100.000</td>
+                                <td className={`px-4 py-4 text-center whitespace-nowrap font-black text-lg ${activeWave === 3 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. 1.200.000</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-stone-800 text-white p-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-                    <span className="text-xs uppercase tracking-widest font-bold text-stone-400">Biaya Lainnya</span>
+                <div className="bg-stone-50 p-4 border-t border-stone-200 flex flex-col sm:flex-row justify-between items-center gap-2">
+                    <span className="text-xs uppercase tracking-widest font-bold text-stone-500">Biaya Lainnya</span>
                     <div className="flex items-center gap-2">
-                         <span className="font-serif italic text-stone-300 text-sm">Uang Makan / Bulan :</span>
-                         <span className="text-xl font-bold text-emerald-400">Rp. 400.000</span>
+                         <span className="font-serif italic text-stone-600 text-sm">Uang Makan / Bulan :</span>
+                         <span className="text-lg font-bold text-stone-800 bg-white px-3 py-1 rounded border border-stone-200 shadow-sm">Rp. 400.000</span>
                     </div>
                 </div>
             </div>
