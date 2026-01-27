@@ -1,11 +1,38 @@
-<div align="center">
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# 🎓 SPMB Online - SMP Bhumi Ngasor Ar-Ridho 2026/2027
 
-  <h1>Built with AI Studio</h2>
+Aplikasi formulir Pendaftaran Peserta Didik Baru (PPDB/SPMB) berbasis web modern.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## ✨ Pembaruan Penting
+1.  **Deteksi Offline:** Aplikasi kini memberi peringatan jika koneksi internet terputus.
+2.  **Struktur Data:** Kolom Tempat Lahir dan Tanggal Lahir kini dipisah di Spreadsheet.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## ⚙️ Panduan Update Google Apps Script
 
-</div>
+1.  Copy kode dari `backend/Code.gs` ke editor Apps Script.
+2.  Deploy New Version.
+
+### 📊 Struktur Kolom Spreadsheet (Terbaru)
+Urutan header kolom spreadsheet yang direkomendasikan:
+
+1.  Waktu Input
+2.  ID Pendaftaran
+3.  Sumber Informasi (Survey)
+4.  Nama Lengkap
+5.  NISN
+6.  Jenis Kelamin
+7.  **Tempat Lahir** (Baru: Dipisah)
+8.  **Tanggal Lahir** (Baru: Dipisah)
+9.  Alamat
+10. Sekolah Asal
+11. Nama Ayah
+12. Pekerjaan Ayah
+13. Nama Ibu
+14. Pekerjaan Ibu
+15. No. WA Ortu
+16. Link Kartu Keluarga
+17. Link Akta Kelahiran
+18. Link KTP Wali
+19. Link Pas Foto
+
+---
