@@ -28,7 +28,7 @@ const SurveySection: React.FC<Props> = ({ formData, errors, onSelectionChange })
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
-            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">Selamat Datang Calon Siswa! 👋</h3>
+            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">Selamat Datang Calon Santri! 👋</h3>
             <p className="text-slate-500 text-sm max-w-lg mx-auto leading-relaxed mb-6 sm:mb-10">
                 Sebelum mengisi biodata, kami ingin tahu dari mana Anda mendapatkan informasi tentang Pondok Pesantren Bhumi Ngasor?
                 <br />

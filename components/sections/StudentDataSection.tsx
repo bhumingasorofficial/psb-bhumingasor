@@ -1,9 +1,8 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FormData, FormErrors, Gender, SchoolLevel } from '../../types';
 import Input from '../Input';
 import Select from '../Select';
-import TextArea from '../TextArea';
 
 interface Props {
     formData: FormData;
@@ -13,10 +12,50 @@ interface Props {
 }
 
 const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, handleBlur }) => {
-    // Hitung tahun maksimal (misal: minimal umur 10 tahun untuk masuk Ponpes/SMP)
-    const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() - 9);
-    const maxDateString = maxDate.toISOString().split('T')[0];
+    
+    // --- DROPDOWN DATE HELPERS ---
+    // Parsing existing YYYY-MM-DD
+    const [year, month, day] = useMemo(() => {
+        if (!formData.birthDate) return ['', '', ''];
+        return formData.birthDate.split('-');
+    }, [formData.birthDate]);
+
+    // Generate Arrays
+    const dates = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+    const months = [
+        { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' }, { value: '03', label: 'Maret' },
+        { value: '04', label: 'April' }, { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
+        { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' }, { value: '09', label: 'September' },
+        { value: '10', label: 'Oktober' }, { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
+    ];
+    // Generate Years (Example: 2005 - 2018 for SMP/SMK age range)
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 20; // Approx 2004
+    const endYear = currentYear - 8;   // Approx 2016
+    const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => String(startYear + i));
+
+    // Handler for specific date parts
+    const handleDatePartChange = (part: 'year' | 'month' | 'day', value: string) => {
+        let newYear = year || '2012'; // Default fallback
+        let newMonth = month || '01';
+        let newDay = day || '01';
+
+        if (part === 'year') newYear = value;
+        if (part === 'month') newMonth = value;
+        if (part === 'day') newDay = value;
+
+        // Reconstruct YYYY-MM-DD
+        const newDateString = `${newYear}-${newMonth}-${newDay}`;
+        
+        // Mock Event for parent handler
+        handleChange({
+            target: {
+                name: 'birthDate',
+                value: newDateString,
+                type: 'date'
+            }
+        } as any);
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -74,19 +113,44 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                     <Input label="Tempat Lahir" id="birthPlace" name="birthPlace" type="text" value={formData.birthPlace} onChange={handleChange} onBlur={handleBlur} error={errors.birthPlace} required placeholder="Contoh: Jakarta" />
                 </div>
                 
+                {/* IMPROVED DATE INPUT (Split into 3 Selects) */}
                 <div className="sm:col-span-3">
-                    <Input 
-                        label="Tanggal Lahir" 
-                        id="birthDate" 
-                        name="birthDate" 
-                        type="date" 
-                        max={maxDateString}
-                        value={formData.birthDate} 
-                        onChange={handleChange} 
-                        onBlur={handleBlur} 
-                        error={errors.birthDate} 
-                        required 
-                    />
+                    <label className="block text-sm font-bold text-stone-600 mb-2 ml-1">
+                        Tanggal Lahir <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="relative">
+                            <select 
+                                value={day} 
+                                onChange={(e) => handleDatePartChange('day', e.target.value)}
+                                className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none"
+                            >
+                                <option value="" disabled>Tgl</option>
+                                {dates.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <select 
+                                value={month} 
+                                onChange={(e) => handleDatePartChange('month', e.target.value)}
+                                className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none"
+                            >
+                                <option value="" disabled>Bln</option>
+                                {months.map(m => <option key={m.value} value={m.value}>{m.label.substring(0, 3)}</option>)}
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <select 
+                                value={year} 
+                                onChange={(e) => handleDatePartChange('year', e.target.value)}
+                                className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none"
+                            >
+                                <option value="" disabled>Thn</option>
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    {errors.birthDate && <p className="mt-2 text-xs font-semibold text-red-600 ml-1">{errors.birthDate}</p>}
                 </div>
 
                 <div className="sm:col-span-3">

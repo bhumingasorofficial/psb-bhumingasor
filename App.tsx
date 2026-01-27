@@ -184,8 +184,8 @@ const App: React.FC = () => {
         }
     }, [isDraftLoaded]);
 
-    // TECH RISK: Aggressive Compression (Max 800px, Quality 0.5)
-    const compressImage = (file: File, maxWidth = 800, quality = 0.5): Promise<string> => {
+    // UPDATED: Smart Compression based on params
+    const compressImage = (file: File, maxWidth: number, quality: number): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -196,14 +196,20 @@ const App: React.FC = () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
+                    
+                    // Scale down if needed
                     if (width > maxWidth) {
                         height = (maxWidth / width) * height;
                         width = maxWidth;
                     }
+                    
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
+                        // Better interpolation
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(img, 0, 0, width, height);
                         resolve(canvas.toDataURL('image/jpeg', quality));
                     } else { reject(new Error("Canvas context error")); }
@@ -302,9 +308,10 @@ const App: React.FC = () => {
 
         const result = formSchema.safeParse(formData);
         if (!result.success) {
-            setErrors(result.error.flatten().fieldErrors as FormErrors);
-            const firstError = Object.keys(result.error.flatten().fieldErrors)[0];
-            scrollToError(firstError); // Use new scroll logic
+            const errors = result.error.flatten().fieldErrors;
+            setErrors(errors as FormErrors);
+            const firstError = Object.keys(errors)[0];
+            if (firstError) scrollToError(firstError);
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -314,9 +321,6 @@ const App: React.FC = () => {
         try {
             const id = `PONPES-${Date.now().toString().slice(-6)}`;
             
-            // CONCATENATE ADDRESS for Backend Compatibility
-            // menggabungkan seluruh field alamat menjadi satu string lengkap
-            // UPDATE: Menghapus prefix "DS." dan "KEC." agar data spreadsheet lebih bersih
             const fullAddress = `${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`;
 
             const payload: any = {
@@ -335,7 +339,7 @@ const App: React.FC = () => {
                 motherName: formData.motherName.trim(),
                 motherOccupation: formData.motherOccupation === ParentOccupation.LAINNYA ? formData.motherOccupationOther : formData.motherOccupation,
                 parentWaNumber: formData.parentWaNumber.trim(),
-                address: fullAddress, // Send the combined address
+                address: fullAddress,
             };
 
             const processFile = async (field: keyof FormData, base64Key: string, mimeKey: string, label: string) => {
@@ -343,8 +347,21 @@ const App: React.FC = () => {
                 if (file) {
                     setLoadingStatus(`Mengunggah ${label}...`);
                     let base64String = "";
-                    if (file.type.startsWith('image/')) base64String = await compressImage(file);
-                    else base64String = await fileToBase64(file);
+                    
+                    if (file.type.startsWith('image/')) {
+                        // SMART COMPRESSION LOGIC
+                        // Dokumen Teks (KK, Akta, Ijazah, KTP) butuh High Res untuk dibaca jelas di GDrive
+                        const isHighResNeeded = ['kartuKeluarga', 'aktaKelahiran', 'ktpWalimurid', 'ijazah'].includes(field);
+                        
+                        // UPDATE REQUEST: Gambar pecah di GDrive. Naikkan resolusi & kualitas.
+                        const maxWidth = isHighResNeeded ? 2048 : 1200; // 2K Resolution for docs
+                        const quality = isHighResNeeded ? 0.9 : 0.85;   // High quality
+                        
+                        base64String = await compressImage(file, maxWidth, quality);
+                    } else {
+                        base64String = await fileToBase64(file);
+                    }
+                    
                     const rawBase64 = base64String.includes('base64,') ? base64String.split('base64,')[1] : base64String;
                     payload[base64Key] = rawBase64;
                     payload[mimeKey] = file.type;
@@ -359,15 +376,40 @@ const App: React.FC = () => {
             await processFile('buktiPembayaran', 'buktiPembayaranBase64', 'buktiPembayaranMime', 'Bukti Bayar');
 
             setLoadingStatus('Mengirim ke Server...');
-            await fetch(`${GOOGLE_SHEET_URL}?t=${Date.now()}`, {
-                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload)
+
+            // RETRY LOGIC for "Blind Submit" Risk Mitigation
+            const fetchWithRetry = async (url: string, options: any, retries = 3) => {
+                try {
+                    return await fetch(url, options);
+                } catch (err) {
+                    if (retries > 0) {
+                        setLoadingStatus(`Koneksi tidak stabil, mencoba lagi... (${retries})`);
+                        await new Promise(r => setTimeout(r, 2000)); // Wait 2s
+                        return fetchWithRetry(url, options, retries - 1);
+                    }
+                    throw err;
+                }
+            };
+
+            await fetchWithRetry(`${GOOGLE_SHEET_URL}?t=${Date.now()}`, {
+                method: 'POST', 
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: JSON.stringify(payload)
             });
 
+            // Delay to simulate processing and ensure the user sees the "finish" state
             await new Promise(r => setTimeout(r, 4000));
+            
             localStorage.removeItem(STORAGE_KEY);
             setRegistrationId(id);
             setSubmissionStatus('success');
-        } catch (err) { console.error(err); setSubmissionStatus('server_error'); } finally { setLoadingStatus(''); }
+        } catch (err) { 
+            console.error(err); 
+            // If retry fails, show specific error
+            addToast('error', 'Gagal Terkirim', 'Terjadi kesalahan jaringan. Mohon coba lagi saat sinyal lebih stabil.');
+            setSubmissionStatus('error'); // Keep user on page so data isn't lost
+        } finally { setLoadingStatus(''); }
     };
 
     const handleNext = () => {
@@ -376,7 +418,7 @@ const App: React.FC = () => {
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
              const firstError = Object.keys(validationErrors)[0];
-             scrollToError(firstError); // Use new scroll logic
+             if (firstError) scrollToError(firstError);
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }
@@ -652,6 +694,14 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center py-6 sm:py-12 px-3 sm:px-4 no-print">
             <Toast toasts={toasts} removeToast={removeToast} />
             
+            {/* NEW: Auto-save Indicator (Visual Comfort) */}
+            <div className={`fixed top-4 right-4 z-50 transition-all duration-300 ${isSaving ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+                <div className="bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-500 px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                    Menyimpan...
+                </div>
+            </div>
+
             {/* Loading Overlay with Feedback */}
             {loadingStatus && (
                 <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
