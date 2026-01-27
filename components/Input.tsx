@@ -4,9 +4,10 @@ import React from 'react';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
     error?: string | string[];
+    topRightLabel?: React.ReactNode;
 }
 
-const Input: React.FC<InputProps> = ({ label, id, error, ...props }) => {
+const Input: React.FC<InputProps> = ({ label, id, error, topRightLabel, ...props }) => {
     const errorMsg = Array.isArray(error) ? error[0] : error;
     
     // Updated Styles for "Comfort":
@@ -22,9 +23,14 @@ const Input: React.FC<InputProps> = ({ label, id, error, ...props }) => {
 
     return (
         <div className="w-full group">
-            <label htmlFor={id} className="block text-sm font-bold text-stone-600 mb-2 transition-colors group-focus-within:text-primary-700 ml-1">
-                {label} {props.required && <span className="text-red-500">*</span>}
-            </label>
+            <div className="flex justify-between items-center mb-2">
+                <label htmlFor={id} className="block text-sm font-bold text-stone-600 transition-colors group-focus-within:text-primary-700 ml-1">
+                    {label} {props.required && <span className="text-red-500">*</span>}
+                </label>
+                {topRightLabel && (
+                    <div className="text-xs">{topRightLabel}</div>
+                )}
+            </div>
             <div className="relative">
                 <input
                     id={id}

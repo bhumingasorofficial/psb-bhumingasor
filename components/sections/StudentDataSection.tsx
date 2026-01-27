@@ -78,7 +78,32 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                 </div>
 
                 <div className="sm:col-span-3">
-                    <Input label="NISN" id="nisn" name="nisn" type="text" pattern="\d{10}" maxLength={10} value={formData.nisn} onChange={handleChange} onBlur={handleBlur} error={errors.nisn} required inputMode="numeric" placeholder="10 digit angka" />
+                    <Input 
+                        label="NISN" 
+                        id="nisn" 
+                        name="nisn" 
+                        type="text" 
+                        pattern="\d{10}" 
+                        maxLength={10} 
+                        value={formData.nisn} 
+                        onChange={handleChange} 
+                        onBlur={handleBlur} 
+                        error={errors.nisn} 
+                        required 
+                        inputMode="numeric" 
+                        placeholder="10 digit angka"
+                        topRightLabel={
+                            <a 
+                                href="https://nisn.data.kemdikbud.go.id/index.php/Cindex/formcaribynama/" 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors"
+                            >
+                                Cek NISN Online
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            </a>
+                        }
+                    />
                 </div>
 
                 <div className="sm:col-span-6">
