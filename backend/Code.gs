@@ -5,7 +5,7 @@
  * ID Folder: 1gOAPJ1v6eUiWdK0_MuNTrqotHNtJaPyU
  */
 
-var EMAIL_ADMIN = "smpbhumingasor@gmail.com"; 
+var EMAIL_ADMIN = "bhumingasorofficial@gmail.com"; 
 
 function doPost(e) {
   var lock = LockService.getScriptLock();

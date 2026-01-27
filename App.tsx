@@ -498,7 +498,7 @@ const App: React.FC = () => {
                             <h1 className="text-3xl font-black uppercase mb-3 text-emerald-700 font-serif tracking-[0.2em] leading-none">BHUMI NGASOR</h1>
                             <p className="text-[10px] italic text-stone-600 font-medium leading-tight">
                                 Sekretariat: Jl. Pendhopo Kamulyan RT.02 RW.01 Dsn. Bakalan Kec. Bululawang Kab. Malang<br/>
-                                Email: <span className="text-emerald-700">smpbhumingasor@gmail.com</span>
+                                Email: <span className="text-emerald-700">bhumingasorofficial@gmail.com</span>
                             </p>
                         </div>
                     </div>
@@ -532,7 +532,7 @@ const App: React.FC = () => {
                                 <PrintRow label="JENIS KELAMIN" value={formData.gender} />
                                 <PrintRow 
                                     label="ALAMAT LENGKAP" 
-                                    value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, DS. ${formData.village}, KEC. ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
+                                    value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
                                 />
                                 <PrintRow label="NAMA ORANG TUA" value={`${formData.fatherName} / ${formData.motherName}`} />
                                 <PrintRow label="NO. WHATSAPP" value={formData.parentWaNumber} />

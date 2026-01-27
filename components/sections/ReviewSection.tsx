@@ -69,7 +69,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                         <DataRow label="Asal Sekolah" value={formData.previousSchool} />
                         <DataRow 
                             label="Alamat Lengkap" 
-                            value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, DS. ${formData.village}, KEC. ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
+                            value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
                         />
                     </div>
 
