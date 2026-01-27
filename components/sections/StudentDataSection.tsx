@@ -138,11 +138,28 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                         <div className="sm:col-span-3">
                              <Input label="Kabupaten / Kota" id="city" name="city" type="text" value={formData.city} onChange={handleChange} onBlur={handleBlur} error={errors.city} required placeholder="Surabaya" />
                         </div>
-                        <div className="sm:col-span-2">
+                        
+                        <div className="sm:col-span-3">
                              <Input label="Kecamatan" id="district" name="district" type="text" value={formData.district} onChange={handleChange} onBlur={handleBlur} error={errors.district} required placeholder="Tegalsari" />
                         </div>
-                        <div className="sm:col-span-4">
-                             <Input label="Detail Jalan / RT / RW" id="specificAddress" name="specificAddress" type="text" value={formData.specificAddress} onChange={handleChange} onBlur={handleBlur} error={errors.specificAddress} required placeholder="Jl. Mawar No. 12, RT 01 RW 02, Dusun A" />
+                        <div className="sm:col-span-3">
+                             <Input label="Desa / Kelurahan" id="village" name="village" type="text" value={formData.village} onChange={handleChange} onBlur={handleBlur} error={errors.village} required placeholder="Mawar Indah" />
+                        </div>
+
+                        {/* Detail Jalan */}
+                        <div className="sm:col-span-6">
+                             <Input label="Detail Jalan / Dusun" id="specificAddress" name="specificAddress" type="text" value={formData.specificAddress} onChange={handleChange} onBlur={handleBlur} error={errors.specificAddress} required placeholder="Jl. Mawar No. 12 / Dusun A" />
+                        </div>
+
+                        {/* RT RW Kode Pos */}
+                        <div className="sm:col-span-2">
+                             <Input label="RT" id="rt" name="rt" type="text" inputMode="numeric" value={formData.rt} onChange={handleChange} onBlur={handleBlur} error={errors.rt} required placeholder="001" />
+                        </div>
+                        <div className="sm:col-span-2">
+                             <Input label="RW" id="rw" name="rw" type="text" inputMode="numeric" value={formData.rw} onChange={handleChange} onBlur={handleBlur} error={errors.rw} required placeholder="005" />
+                        </div>
+                        <div className="sm:col-span-2">
+                             <Input label="Kode Pos" id="postalCode" name="postalCode" type="text" inputMode="numeric" maxLength={5} value={formData.postalCode} onChange={handleChange} onBlur={handleBlur} error={errors.postalCode} required placeholder="651xx" />
                         </div>
                     </div>
                 </div>

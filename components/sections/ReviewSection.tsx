@@ -67,7 +67,10 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                         <DataRow label="NISN" value={formData.nisn} />
                         <DataRow label="TTL" value={`${formData.birthPlace}, ${formData.birthDate}`} />
                         <DataRow label="Asal Sekolah" value={formData.previousSchool} />
-                        <DataRow label="Alamat" value={`${formData.specificAddress}, ${formData.district}, ${formData.city}, ${formData.province}`} />
+                        <DataRow 
+                            label="Alamat Lengkap" 
+                            value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, DS. ${formData.village}, KEC. ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
+                        />
                     </div>
 
                     <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">

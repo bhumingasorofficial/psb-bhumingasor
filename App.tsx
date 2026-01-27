@@ -67,6 +67,10 @@ const App: React.FC = () => {
         province: '',
         city: '',
         district: '',
+        village: '', // ADDED
+        rt: '',      // ADDED
+        rw: '',      // ADDED
+        postalCode: '', // ADDED
         specificAddress: '',
         previousSchool: '',
         nisn: '',
@@ -227,6 +231,10 @@ const App: React.FC = () => {
             setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 16) }));
             return;
         }
+        if (name === 'postalCode') {
+            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 5) }));
+            return;
+        }
         if (name === 'parentWaNumber') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/[^0-9+]/g, '') }));
             return;
@@ -288,14 +296,15 @@ const App: React.FC = () => {
             const id = `PONPES-${Date.now().toString().slice(-6)}`;
             
             // CONCATENATE ADDRESS for Backend Compatibility
-            const fullAddress = `${formData.specificAddress}, Kec. ${formData.district}, ${formData.city}, ${formData.province}`;
+            // menggabungkan seluruh field alamat menjadi satu string lengkap
+            const fullAddress = `${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, DS. ${formData.village}, KEC. ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`;
 
             const payload: any = {
                 regId: id,
                 infoSource: formData.infoSource.join(', '),
                 schoolChoice: formData.schoolChoice,
                 fullName: formData.fullName.trim(),
-                nik: formData.nik.trim(), // ADDED NIK
+                nik: formData.nik.trim(), 
                 nisn: formData.nisn.trim(),
                 gender: formData.gender,
                 birthPlace: formData.birthPlace.trim(),
@@ -532,7 +541,7 @@ const App: React.FC = () => {
                                 <tr className="border-b border-gray-300">
                                     <td className="py-2 font-bold">ALAMAT LENGKAP</td>
                                     <td className="py-2">:</td>
-                                    <td className="py-2 uppercase">{formData.specificAddress}, {formData.district}, {formData.city}, {formData.province}</td>
+                                    <td className="py-2 uppercase">{formData.specificAddress}, RT {formData.rt} / RW {formData.rw}, {formData.village}, {formData.district}, {formData.city}, {formData.province}, {formData.postalCode}</td>
                                 </tr>
                                 <tr className="border-b border-gray-300">
                                     <td className="py-2 font-bold">NAMA ORANG TUA</td>

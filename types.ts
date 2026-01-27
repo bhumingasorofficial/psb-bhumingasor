@@ -60,8 +60,11 @@ export const baseFormSchema = z.object({
     province: z.string().min(1, 'Provinsi wajib diisi'),
     city: z.string().min(1, 'Kabupaten/Kota wajib diisi'),
     district: z.string().min(1, 'Kecamatan wajib diisi'),
-    specificAddress: z.string().min(1, 'Jalan/RT/RW/Dusun wajib diisi'),
-    // address field lama dihapus/diganti gabungan nanti, tapi di schema kita pakai pecahan
+    village: z.string().min(1, 'Desa/Kelurahan wajib diisi'), // NEW
+    rt: z.string().min(1, 'RT wajib diisi'), // NEW
+    rw: z.string().min(1, 'RW wajib diisi'), // NEW
+    postalCode: z.string().regex(/^\d{5}$/, 'Kode Pos harus 5 digit angka'), // NEW
+    specificAddress: z.string().min(1, 'Detail Jalan/Dusun wajib diisi'),
 
     previousSchool: z.string().min(1, 'Asal sekolah wajib diisi'),
     nisn: z.string().regex(/^\d{10}$/, 'NISN harus terdiri dari 10 digit angka'),
