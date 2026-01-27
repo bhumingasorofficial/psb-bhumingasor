@@ -104,7 +104,7 @@
         /* PRINT STYLING */
         @media print {
             @page {
-                margin: 0.5cm;
+                margin: 0;
                 size: auto;
             }
             
@@ -112,16 +112,12 @@
                 background: white !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                font-family: 'Times New Roman', Times, serif !important; /* Serif font for official look */
             }
 
             /* Hide everything by default */
             .no-print, 
             .no-print * {
                 display: none !important;
-                height: 0 !important;
-                width: 0 !important;
-                opacity: 0 !important;
             }
 
             /* Only show print-specific elements */
@@ -131,15 +127,10 @@
                 top: 0 !important;
                 left: 0 !important;
                 width: 100% !important;
+                height: 100% !important;
                 background: white !important;
                 color: black !important;
                 z-index: 9999 !important;
-                padding: 0 20px !important;
-            }
-            
-            /* Hide the main root container styles that might conflict */
-            #root > div.min-h-screen {
-                display: none !important;
             }
         }
         
