@@ -27,14 +27,16 @@ const STORAGE_KEY = 'psb_pesantren_draft_v1';
 // --- STATIC UI COMPONENTS (Moved Outside App for Better Performance) ---
 
 const BrandHeader = () => (
-    <div className="flex flex-col items-center justify-center mb-6 sm:mb-8 animate-fade-up text-center px-4">
-        <div className="bg-white p-2 sm:p-3 rounded-2xl shadow-sm mb-3 sm:mb-4">
-            <img src={LOGO_URL} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
+    <div className="flex flex-col items-center justify-center mb-8 sm:mb-10 animate-fade-up text-center px-4">
+        {/* LOGO DIPERBESAR */}
+        <div className="bg-white p-3 sm:p-4 rounded-3xl shadow-sm mb-4 sm:mb-6">
+            <img src={LOGO_URL} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
         </div>
-        <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans leading-tight max-w-3xl">
-            Penerimaan Santri Baru<br className="hidden sm:block" /> Pondok Pesantren Bhumi Ngasor
+        {/* JUDUL DIPERBESAR */}
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-sans leading-tight max-w-3xl">
+            Penerimaan Santri Baru<br /> <span className="text-emerald-700">Pondok Pesantren Bhumi Ngasor</span>
         </h1>
-        <span className="mt-2 sm:mt-3 px-3 sm:px-4 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-bold tracking-[0.2em] rounded-full uppercase border border-emerald-100">
+        <span className="mt-3 sm:mt-4 px-4 sm:px-5 py-2 bg-emerald-50 text-emerald-700 text-xs sm:text-sm font-bold tracking-[0.2em] rounded-full uppercase border border-emerald-100">
             Tahun Ajaran 2026/2027
         </span>
     </div>
@@ -405,28 +407,28 @@ const App: React.FC = () => {
                     
                     {/* --- NEW SECTION: PERSYARATAN PENDAFTARAN --- */}
                     <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 mb-6 text-left shadow-sm">
-                        <h3 className="text-base font-bold text-amber-900 mb-3 flex items-center gap-2 uppercase tracking-wide">
-                             <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                        <h3 className="text-lg sm:text-xl font-bold text-amber-900 mb-3 flex items-center gap-2 uppercase tracking-wide">
+                             <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
                              Persiapan Sebelum Mendaftar
                         </h3>
-                        <p className="text-xs text-amber-800/80 mb-4 leading-relaxed border-b border-amber-200/60 pb-3">
+                        <p className="text-sm sm:text-base text-amber-800/80 mb-4 leading-relaxed border-b border-amber-200/60 pb-3 font-medium">
                             Agar proses pendaftaran berjalan lancar, mohon persiapkan data dan dokumen (Foto/Scan) berikut ini:
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                             {/* Data Column */}
                             <div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-amber-900 mb-2 flex items-center gap-1.5">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <h4 className="text-sm font-bold uppercase tracking-widest text-amber-900 mb-3 flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                     Data Penting
                                 </h4>
-                                <ul className="space-y-2">
-                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                <ul className="space-y-3">
+                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
                                         NIK Calon Santri (Lihat KK)
                                     </li>
-                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
                                         NISN (Nomor Induk Siswa Nasional)
                                     </li>
                                 </ul>
@@ -434,25 +436,25 @@ const App: React.FC = () => {
 
                             {/* Documents Column */}
                             <div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-amber-900 mb-2 flex items-center gap-1.5">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <h4 className="text-sm font-bold uppercase tracking-widest text-amber-900 mb-3 flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                     Dokumen (Foto/Scan)
                                 </h4>
-                                <ul className="space-y-2">
-                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                <ul className="space-y-3">
+                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
                                         Kartu Keluarga & Akta Kelahiran
                                     </li>
-                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
                                         KTP Orang Tua / Wali
                                     </li>
-                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium leading-relaxed">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium leading-relaxed">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
                                         Pas Foto 3x4 (Baju Taqwa Putih, Kopyah Hitam, Background Biru)
                                     </li>
-                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
                                         Ijazah SD/MI atau SMP/MTs
                                     </li>
                                 </ul>
@@ -462,18 +464,18 @@ const App: React.FC = () => {
                     {/* --- END NEW SECTION --- */}
 
                     <div className="bg-emerald-50/60 border border-emerald-100 rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 text-center">
-                        <h2 className="text-lg font-bold text-emerald-900 mb-6">Alur Pendaftaran Online</h2>
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        <h2 className="text-xl sm:text-2xl font-bold text-emerald-900 mb-6">Alur Pendaftaran Online</h2>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
                             {[
                                 { step: 1, label: "Isi Survey Singkat" },
                                 { step: 2, label: "Data Diri & Berkas" },
                                 { step: 3, label: "Simpan Bukti" }
                             ].map((item) => (
-                                <div key={item.step} className="bg-white rounded-2xl p-3 sm:p-4 flex flex-col items-center shadow-sm border border-emerald-100/50">
-                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs sm:text-sm mb-2">
+                                <div key={item.step} className="bg-white rounded-2xl p-4 sm:p-5 flex flex-col items-center shadow-sm border border-emerald-100/50">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-base sm:text-lg mb-3">
                                         {item.step}
                                     </div>
-                                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-600 leading-tight">{item.label}</p>
+                                    <p className="text-xs sm:text-sm font-bold text-slate-700 leading-tight">{item.label}</p>
                                 </div>
                             ))}
                         </div>
