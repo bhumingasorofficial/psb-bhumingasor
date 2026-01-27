@@ -10,7 +10,7 @@ import { formSchema, FormData, FormErrors } from '../types';
 // Step 6: Review/Terms
 const STEP_FIELDS: Record<number, Extract<keyof FormData, string>[]> = {
     1: ['infoSource'],
-    2: ['schoolChoice', 'fullName', 'birthPlace', 'birthDate', 'province', 'city', 'district', 'specificAddress', 'previousSchool', 'nisn', 'gender'],
+    2: ['schoolChoice', 'fullName', 'nik', 'birthPlace', 'birthDate', 'province', 'city', 'district', 'specificAddress', 'previousSchool', 'nisn', 'gender'],
     3: ['fatherName', 'fatherOccupation', 'fatherOccupationOther', 'motherName', 'motherOccupation', 'motherOccupationOther', 'parentWaNumber'],
     4: ['kartuKeluarga', 'aktaKelahiran', 'ktpWalimurid', 'pasFoto', 'ijazah'],
     5: ['buktiPembayaran'],

@@ -22,18 +22,18 @@ function doPost(e) {
     var sheet = ss.getSheets()[0];
 
     // --- BAGIAN 1: UPDATE STATUS (Verifikasi/Reject) ---
+    // Indeks Kolom telah bergeser +1 karena penambahan NIK di rowData
     if (data.action === "UPDATE_STATUS") {
        var allData = sheet.getDataRange().getValues();
        var idFound = false;
        for (var i = 1; i < allData.length; i++) {
          if (String(allData[i][1]) === String(data.regId)) { 
            var rowNum = i + 1;
-           // Kolom W=23 (Status), X=24 (Notes), Y=25 (Verifikator) - Disesuaikan karena ada tambahan 2 kolom file baru + 1 kolom schoolChoice
-           // Pergeseran indeks: schoolChoice masuk, jadi index status bergeser +1 dari sebelumnya
-           // Sebelumnya Status di index 23, sekarang jadi 24
-           sheet.getRange(rowNum, 24).setValue(data.status); 
-           sheet.getRange(rowNum, 25).setValue(data.notes);
-           sheet.getRange(rowNum, 26).setValue(data.admin + " (" + new Date().toLocaleString() + ")");
+           // Kolom W=23 (Status) SEBELUMNYA. Sekarang geser +1 (NIK) +1 (SchoolChoice) = 25
+           // Kolom Status = 25 (Index 24 di JS array, tapi setValue pakai 1-based index jd 25)
+           sheet.getRange(rowNum, 25).setValue(data.status); 
+           sheet.getRange(rowNum, 26).setValue(data.notes);
+           sheet.getRange(rowNum, 27).setValue(data.admin + " (" + new Date().toLocaleString() + ")");
            idFound = true;
            break;
          }
@@ -48,15 +48,16 @@ function doPost(e) {
        for (var i = 1; i < allData.length; i++) {
          if (String(allData[i][1]) === String(data.regId)) {
            var rowNum = i + 1;
-           // Indeks bergeser +1 karena ada penambahan schoolChoice di awal
-           // Nama: Index 4 -> 5
-           // NISN: Index 5 -> 6
-           // Sekolah: Index 10 -> 11
-           // WA: Index 15 -> 16
+           // Indeks bergeser +1 karena NIK
+           // Nama: Index 5
+           // NIK: Index 6 (Tidak diupdate disini)
+           // NISN: Index 7
+           // Sekolah: Index 12
+           // WA: Index 17
            sheet.getRange(rowNum, 5).setValue(data.fullName);
-           sheet.getRange(rowNum, 6).setValue("'" + data.nisn);
-           sheet.getRange(rowNum, 11).setValue(data.originSchool);
-           sheet.getRange(rowNum, 16).setValue("'" + data.whatsapp);
+           sheet.getRange(rowNum, 7).setValue("'" + data.nisn);
+           sheet.getRange(rowNum, 12).setValue(data.originSchool);
+           sheet.getRange(rowNum, 17).setValue("'" + data.whatsapp);
            idFound = true;
            break;
          }
@@ -82,16 +83,18 @@ function doPost(e) {
     // 0. Time
     // 1. Reg ID
     // 2. Info Source
-    // 3. School Choice (SMP/SMK) <-- BARU
+    // 3. School Choice
     // 4. Full Name
-    // 5. NISN
+    // 5. NIK (BARU)
+    // 6. NISN
     // ...
     var rowData = [
       new Date(), 
       data.regId, 
       data.infoSource, 
-      data.schoolChoice, // FIELD BARU
-      data.fullName, 
+      data.schoolChoice,
+      data.fullName,
+      "'" + data.nik, // FIELD BARU NIK
       "'" + data.nisn, 
       data.gender,
       data.birthPlace, 

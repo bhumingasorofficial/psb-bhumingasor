@@ -31,6 +31,7 @@ const App: React.FC = () => {
         infoSource: [],
         schoolChoice: SchoolLevel.SMP,
         fullName: '',
+        nik: '', // ADDED
         birthPlace: '',
         birthDate: '',
         province: '',
@@ -192,6 +193,10 @@ const App: React.FC = () => {
             setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
             return;
         }
+        if (name === 'nik') {
+            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 16) }));
+            return;
+        }
         if (name === 'parentWaNumber') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/[^0-9+]/g, '') }));
             return;
@@ -260,6 +265,7 @@ const App: React.FC = () => {
                 infoSource: formData.infoSource.join(', '),
                 schoolChoice: formData.schoolChoice,
                 fullName: formData.fullName.trim(),
+                nik: formData.nik.trim(), // ADDED NIK
                 nisn: formData.nisn.trim(),
                 gender: formData.gender,
                 birthPlace: formData.birthPlace.trim(),
@@ -483,6 +489,11 @@ const App: React.FC = () => {
                                     <td className="py-2 font-bold">NAMA LENGKAP</td>
                                     <td className="py-2">:</td>
                                     <td className="py-2 uppercase">{formData.fullName}</td>
+                                </tr>
+                                <tr className="border-b border-gray-300">
+                                    <td className="py-2 font-bold">NIK</td>
+                                    <td className="py-2">:</td>
+                                    <td className="py-2">{formData.nik}</td>
                                 </tr>
                                 <tr className="border-b border-gray-300">
                                     <td className="py-2 font-bold">NISN</td>

@@ -52,6 +52,7 @@ export const baseFormSchema = z.object({
     // Step 2: Student Data
     schoolChoice: z.nativeEnum(SchoolLevel),
     fullName: z.string().min(1, 'Nama lengkap wajib diisi'),
+    nik: z.string().regex(/^\d{16}$/, 'NIK harus terdiri dari 16 digit angka'), // ADDED NIK
     birthPlace: z.string().min(1, 'Tempat lahir wajib diisi'),
     birthDate: z.string().min(1, 'Tanggal lahir wajib diisi'),
     

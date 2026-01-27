@@ -51,6 +51,24 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                 <div className="sm:col-span-6">
                     <Input label="Nama Lengkap" id="fullName" name="fullName" type="text" value={formData.fullName} onChange={handleChange} onBlur={handleBlur} error={errors.fullName} required autoComplete="name" placeholder="Masukkan nama sesuai Ijazah/Akta" />
                 </div>
+
+                <div className="sm:col-span-6">
+                    <Input 
+                        label="NIK (Nomor Induk Kependudukan)" 
+                        id="nik" 
+                        name="nik" 
+                        type="text" 
+                        pattern="\d{16}" 
+                        maxLength={16} 
+                        value={formData.nik} 
+                        onChange={handleChange} 
+                        onBlur={handleBlur} 
+                        error={errors.nik} 
+                        required 
+                        inputMode="numeric" 
+                        placeholder="16 digit angka sesuai KK/Akta" 
+                    />
+                </div>
                 
                 <div className="sm:col-span-3">
                     <Input label="Tempat Lahir" id="birthPlace" name="birthPlace" type="text" value={formData.birthPlace} onChange={handleChange} onBlur={handleBlur} error={errors.birthPlace} required placeholder="Contoh: Jakarta" />
