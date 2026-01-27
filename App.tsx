@@ -297,7 +297,8 @@ const App: React.FC = () => {
             
             // CONCATENATE ADDRESS for Backend Compatibility
             // menggabungkan seluruh field alamat menjadi satu string lengkap
-            const fullAddress = `${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, DS. ${formData.village}, KEC. ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`;
+            // UPDATE: Menghapus prefix "DS." dan "KEC." agar data spreadsheet lebih bersih
+            const fullAddress = `${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`;
 
             const payload: any = {
                 regId: id,
@@ -420,10 +421,10 @@ const App: React.FC = () => {
     // --- SUCCESS PAGE MODE (WITH SEPARATE PRINT VIEW) ---
     if (submissionStatus === 'success') {
         const PrintRow = ({ label, value }: { label: string, value: string }) => (
-            <tr className="border-b border-stone-200">
-                <td className="py-2.5 font-bold text-stone-700 w-48 align-top text-xs uppercase tracking-wide">{label}</td>
-                <td className="py-2.5 w-4 align-top text-stone-500 font-bold">:</td>
-                <td className="py-2.5 text-stone-900 font-bold uppercase align-top leading-relaxed">{value}</td>
+            <tr className="border-b border-stone-100/60">
+                <td className="py-1.5 font-bold text-stone-700 w-48 align-top text-xs uppercase tracking-wide">{label}</td>
+                <td className="py-1.5 w-4 align-top text-stone-500 font-bold">:</td>
+                <td className="py-1.5 text-stone-900 font-bold uppercase align-top leading-relaxed text-xs">{value}</td>
             </tr>
         );
 
@@ -481,46 +482,48 @@ const App: React.FC = () => {
                 </div>
 
                 {/* --- PRINT VIEW (VISIBLE ONLY ON PRINT) --- */}
-                <div className="print-only bg-white p-12 text-black w-full h-full max-w-[210mm] mx-auto">
-                    {/* Kop Surat Berwarna */}
-                    <div className="flex items-center justify-between border-b-4 border-stone-800 pb-6 mb-8 relative">
+                {/* Optimized to fit 1 Page A4 */}
+                <div className="print-only bg-white p-8 text-black w-full max-w-[210mm] mx-auto min-h-screen relative box-border">
+                    {/* Kop Surat Berwarna & Terstruktur */}
+                    <div className="flex items-center justify-between border-b-[3px] border-emerald-800 pb-4 mb-6 relative">
                          {/* Green Line Accent */}
-                         <div className="absolute -bottom-1 left-0 w-full h-1 bg-emerald-600"></div>
+                         <div className="absolute -bottom-1.5 left-0 w-full h-[1.5px] bg-emerald-500"></div>
 
-                        <div className="w-28 h-28 flex-shrink-0 mr-6">
+                        <div className="w-24 h-24 flex-shrink-0 mr-4">
                             <img src={LOGO_URL} alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <div className="flex-1 text-center">
-                            <h2 className="text-xl font-bold uppercase tracking-wide mb-1 text-emerald-900 font-serif">YAYASAN PONDOK PESANTREN</h2>
-                            <h1 className="text-3xl font-black uppercase mb-2 text-stone-900 font-serif tracking-tight">AN NUR HIDAYATUS SALAM BHUMI NGASOR</h1>
-                            <p className="text-sm italic text-stone-600 font-medium">
+                            <h3 className="text-lg font-bold uppercase tracking-widest text-emerald-900 font-serif mb-1">YAYASAN PONDOK PESANTREN</h3>
+                            <h1 className="text-3xl font-black uppercase mb-1 text-stone-900 font-serif tracking-tight leading-none scale-y-110">AN-NUR HIDAYATUS SALAM</h1>
+                            <h1 className="text-3xl font-black uppercase mb-3 text-emerald-700 font-serif tracking-[0.2em] leading-none">BHUMI NGASOR</h1>
+                            <p className="text-[10px] italic text-stone-600 font-medium leading-tight">
                                 Sekretariat: Jl. Pendhopo Kamulyan RT.02 RW.01 Dsn. Bakalan Kec. Bululawang Kab. Malang<br/>
-                                Website: <span className="text-emerald-700">https://bhumingasor.com</span> | Email: <span className="text-emerald-700">smpbhumingasor@gmail.com</span>
+                                Email: <span className="text-emerald-700">smpbhumingasor@gmail.com</span>
                             </p>
                         </div>
                     </div>
 
                     {/* Judul Dokumen */}
-                    <div className="text-center mb-10">
-                        <h3 className="text-2xl font-black text-stone-900 underline decoration-4 decoration-emerald-500 underline-offset-8 mb-3 uppercase tracking-wider">TANDA BUKTI PENDAFTARAN</h3>
-                        <p className="text-sm font-bold text-stone-500 uppercase tracking-[0.3em]">TAHUN AJARAN 2026/2027</p>
+                    <div className="text-center mb-6">
+                        <h3 className="text-xl font-black text-stone-900 underline decoration-2 decoration-emerald-500 underline-offset-4 mb-1 uppercase tracking-wider">TANDA BUKTI PENDAFTARAN</h3>
+                        <p className="text-xs font-bold text-stone-500 uppercase tracking-[0.3em]">TAHUN AJARAN 2026/2027</p>
                     </div>
 
-                    {/* ID Card Box Berwarna */}
-                    <div className="border-2 border-emerald-500 bg-emerald-50/50 rounded-xl p-6 mb-10 flex justify-between items-center shadow-sm">
+                    {/* ID Card Box Berwarna - Lebih Compact */}
+                    <div className="border-l-4 border-emerald-500 bg-emerald-50/50 rounded-r-lg p-4 mb-6 flex justify-between items-center shadow-sm">
                         <div>
-                            <p className="text-xs uppercase font-extrabold text-emerald-800 mb-1 tracking-wider">NOMOR REGISTRASI:</p>
-                            <p className="text-4xl font-mono font-black tracking-widest text-stone-900">{registrationId}</p>
+                            <p className="text-[10px] uppercase font-extrabold text-emerald-800 mb-0.5 tracking-wider">NOMOR REGISTRASI:</p>
+                            <p className="text-3xl font-mono font-black tracking-widest text-stone-900 leading-none">{registrationId}</p>
                         </div>
                         <div className="text-right">
-                             <p className="text-xs uppercase font-extrabold text-emerald-800 mb-1 tracking-wider">TANGGAL DAFTAR:</p>
-                             <p className="text-xl font-bold text-stone-800">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
+                             <p className="text-[10px] uppercase font-extrabold text-emerald-800 mb-0.5 tracking-wider">TANGGAL DAFTAR:</p>
+                             <p className="text-lg font-bold text-stone-800 leading-none">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
                         </div>
                     </div>
 
-                    {/* Biodata Table Berwarna */}
-                    <div className="mb-10">
-                        <table className="w-full text-sm">
+                    {/* Biodata Table Berwarna - Padding dikurangi */}
+                    <div className="mb-6">
+                        <table className="w-full text-xs">
                             <tbody>
                                 <PrintRow label="JENJANG PENDIDIKAN" value={formData.schoolChoice} />
                                 <PrintRow label="NAMA LENGKAP" value={formData.fullName} />
@@ -537,26 +540,26 @@ const App: React.FC = () => {
                         </table>
                     </div>
 
-                    {/* Footer Info Box */}
-                    <div className="bg-amber-50 p-5 border-l-4 border-amber-400 text-xs mb-16 rounded-r-lg">
-                        <strong className="text-amber-900 uppercase tracking-wide block mb-2">CATATAN PENTING:</strong>
-                        <ul className="list-disc pl-5 space-y-1.5 text-stone-700 font-medium">
+                    {/* Footer Info Box - Lebih Compact */}
+                    <div className="bg-amber-50 p-3 border-l-4 border-amber-400 text-[10px] mb-8 rounded-r-lg">
+                        <strong className="text-amber-900 uppercase tracking-wide block mb-1">CATATAN PENTING:</strong>
+                        <ul className="list-disc pl-4 space-y-0.5 text-stone-700 font-medium">
                             <li>Kartu ini adalah bukti sah pendaftaran santri baru Pondok Pesantren Bhumi Ngasor.</li>
                             <li>Harap simpan kartu ini dan dibawa saat melakukan daftar ulang atau tes masuk.</li>
                             <li>Informasi lebih lanjut dapat menghubungi Panitia PSB melalui nomor WhatsApp yang tertera di website.</li>
                         </ul>
                     </div>
 
-                    {/* Tanda Tangan */}
-                    <div className="flex justify-between text-center mt-12 px-8">
-                        <div className="w-64">
-                            <p className="mb-24 font-bold text-stone-600">Panitia PSB,</p>
-                            <div className="border-b-2 border-stone-800 w-full"></div>
-                            <p className="mt-1 text-xs text-stone-400 font-bold">( Tanda Tangan & Stempel )</p>
+                    {/* Tanda Tangan - Side by Side */}
+                    <div className="flex justify-between items-end px-4 mt-auto">
+                        <div className="text-center w-48">
+                            <p className="mb-16 text-xs font-bold text-stone-600">Panitia PSB,</p>
+                            <div className="border-b border-stone-800 w-full mb-1"></div>
+                            <p className="text-[10px] text-stone-400 font-bold">( Tanda Tangan & Stempel )</p>
                         </div>
-                        <div className="w-64">
-                            <p className="mb-24 font-bold text-stone-600">Orang Tua / Wali,</p>
-                            <p className="font-bold text-stone-900 text-lg border-b-2 border-stone-800 uppercase pb-1 inline-block min-w-full">
+                        <div className="text-center w-48">
+                            <p className="mb-16 text-xs font-bold text-stone-600">Orang Tua / Wali,</p>
+                            <p className="text-sm font-bold text-stone-900 border-b border-stone-800 uppercase pb-1 mb-1">
                                 ( {formData.fatherName} )
                             </p>
                         </div>
