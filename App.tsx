@@ -385,6 +385,64 @@ const App: React.FC = () => {
                 <div className="w-full max-w-lg bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_40px_-5px_rgba(0,0,0,0.1)] p-6 sm:p-10 relative overflow-hidden animate-fade-up">
                     <BrandHeader />
                     
+                    {/* --- NEW SECTION: PERSYARATAN PENDAFTARAN --- */}
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 mb-6 text-left shadow-sm">
+                        <h3 className="text-base font-bold text-amber-900 mb-3 flex items-center gap-2 uppercase tracking-wide">
+                             <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                             Persiapan Sebelum Mendaftar
+                        </h3>
+                        <p className="text-xs text-amber-800/80 mb-4 leading-relaxed border-b border-amber-200/60 pb-3">
+                            Agar proses pendaftaran berjalan lancar, mohon persiapkan data dan dokumen (Foto/Scan) berikut ini:
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            {/* Data Column */}
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-amber-900 mb-2 flex items-center gap-1.5">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Data Penting
+                                </h4>
+                                <ul className="space-y-2">
+                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                        NIK Calon Santri (Lihat KK)
+                                    </li>
+                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                        NISN (Nomor Induk Siswa Nasional)
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* Documents Column */}
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-amber-900 mb-2 flex items-center gap-1.5">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    Dokumen (Foto/Scan)
+                                </h4>
+                                <ul className="space-y-2">
+                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                        Kartu Keluarga & Akta Kelahiran
+                                    </li>
+                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                        KTP Orang Tua / Wali
+                                    </li>
+                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium leading-relaxed">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                        Pas Foto 3x4 (Baju Taqwa Putih, Kopyah Hitam, Background Biru)
+                                    </li>
+                                    <li className="flex items-start gap-2 text-xs text-amber-900 font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1 shrink-0"></div> 
+                                        Ijazah SD/MI atau SMP/MTs
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {/* --- END NEW SECTION --- */}
+
                     <div className="bg-emerald-50/60 border border-emerald-100 rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 text-center">
                         <h2 className="text-lg font-bold text-emerald-900 mb-6">Alur Pendaftaran Online</h2>
                         <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -567,22 +625,6 @@ const App: React.FC = () => {
                 </div>
             </>
         );
-    }
-
-    if (submissionStatus === 'server_error') {
-         return (
-             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                 <FloatingHelp />
-                 <div className="w-full max-w-md bg-white rounded-[2rem] p-10 shadow-xl text-center border border-slate-100">
-                    <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">Terjadi Kesalahan</h3>
-                    <p className="text-slate-500 mb-8 text-sm">Gagal terhubung ke server. Mohon periksa koneksi Anda dan coba lagi.</p>
-                    <button onClick={() => setSubmissionStatus('idle')} className="w-full py-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 shadow-lg shadow-red-600/20 text-sm">Coba Lagi</button>
-                 </div>
-             </div>
-         );
     }
 
     // --- MAIN FORM MODE ---
