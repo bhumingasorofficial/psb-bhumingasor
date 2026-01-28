@@ -6,6 +6,28 @@
  */
 
 var EMAIL_ADMIN = "bhumingasorofficial@gmail.com"; 
+var SECRET_KEY = "0x4AAAAAACU2RP_QZY-6ubAw1mQtm4IYOb4"; // UPDATED SECRET KEY TURNSTILE
+
+// Fungsi Verifikasi Turnstile
+function verifyTurnstile(token) {
+  if (!token) return false;
+  var url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+  var payload = {
+    'secret': SECRET_KEY,
+    'response': token
+  };
+  var options = {
+    'method': 'post',
+    'payload': payload
+  };
+  try {
+    var response = UrlFetchApp.fetch(url, options);
+    var json = JSON.parse(response.getContentText());
+    return json.success;
+  } catch (e) {
+    return false;
+  }
+}
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -47,15 +69,12 @@ function doPost(e) {
     }
 
     // --- BAGIAN 1: UPDATE STATUS (Verifikasi/Reject) ---
-    // Indeks Kolom telah bergeser +1 karena penambahan NIK di rowData
     if (data.action === "UPDATE_STATUS") {
        var allData = sheet.getDataRange().getValues();
        var idFound = false;
        for (var i = 1; i < allData.length; i++) {
          if (String(allData[i][1]) === String(data.regId)) { 
            var rowNum = i + 1;
-           // Kolom W=23 (Status) SEBELUMNYA. Sekarang geser +1 (NIK) +1 (SchoolChoice) = 25
-           // Kolom Status = 25 (Index 24 di JS array, tapi setValue pakai 1-based index jd 25)
            sheet.getRange(rowNum, 25).setValue(data.status); 
            sheet.getRange(rowNum, 26).setValue(data.notes);
            sheet.getRange(rowNum, 27).setValue(data.admin + " (" + new Date().toLocaleString() + ")");
@@ -73,12 +92,6 @@ function doPost(e) {
        for (var i = 1; i < allData.length; i++) {
          if (String(allData[i][1]) === String(data.regId)) {
            var rowNum = i + 1;
-           // Indeks bergeser +1 karena NIK
-           // Nama: Index 5
-           // NIK: Index 6 (Tidak diupdate disini)
-           // NISN: Index 7
-           // Sekolah: Index 12
-           // WA: Index 17
            sheet.getRange(rowNum, 5).setValue(data.fullName);
            sheet.getRange(rowNum, 7).setValue("'" + data.nisn);
            sheet.getRange(rowNum, 12).setValue(data.originSchool);
@@ -90,7 +103,13 @@ function doPost(e) {
        return ContentService.createTextOutput(JSON.stringify({ result: idFound ? "success" : "error", message: idFound ? "Data Updated" : "ID Not Found" })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // --- BAGIAN 3: PENDAFTARAN BARU ---
+    // --- BAGIAN 3: PENDAFTARAN BARU (DENGAN VERIFIKASI CAPTCHA) ---
+    
+    // VERIFIKASI TOKEN TURNSTILE SEBELUM PROSES
+    if (!verifyTurnstile(data.turnstileToken)) {
+       throw new Error("Verifikasi Keamanan (Captcha) Gagal. Silahkan muat ulang halaman.");
+    }
+
     var folder = DriveApp.getFolderById("1gOAPJ1v6eUiWdK0_MuNTrqotHNtJaPyU");
     function uploadFile(base64Str, mime, name) {
       if (!base64Str || base64Str.length < 50) return ""; 
@@ -104,29 +123,20 @@ function doPost(e) {
     }
 
     // UPDATE ROW DATA STRUCTURE
-    // Urutan:
-    // 0. Time
-    // 1. Reg ID
-    // 2. Info Source
-    // 3. School Choice
-    // 4. Full Name
-    // 5. NIK (BARU)
-    // 6. NISN
-    // ...
     var rowData = [
       new Date(), 
       data.regId, 
       data.infoSource, 
-      data.schoolChoice,
+      data.schoolChoice, 
       data.fullName,
-      "'" + data.nik, // FIELD BARU NIK
+      "'" + data.nik, 
       "'" + data.nisn, 
       data.gender,
       data.birthPlace, 
       data.birthDate, 
       data.address, 
       data.previousSchool, 
-      data.fatherName,
+      data.fatherName, 
       data.fatherOccupation, 
       data.motherName, 
       data.motherOccupation, 

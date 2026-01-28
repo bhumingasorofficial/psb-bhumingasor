@@ -45,7 +45,8 @@ const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, h
         </div>
     );
 
-    const handleCopy = () => {
+    const handleCopy = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent accidental form submit
         navigator.clipboard.writeText('122901000279561');
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -125,6 +126,7 @@ const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, h
                     {[1, 2, 3].map(wave => (
                         <button
                             key={wave}
+                            type="button" // FIX: Prevent form submission/validation scroll
                             onClick={() => setActiveTab(wave)}
                             className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg whitespace-nowrap transition-all duration-300 relative ${
                                 activeTab === wave 
@@ -183,6 +185,7 @@ const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, h
                     <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 sm:gap-4 mb-1">
                         <p className="text-2xl sm:text-3xl font-mono font-bold text-slate-800 tracking-tight select-all">122901000279561</p>
                         <button 
+                            type="button"
                             onClick={handleCopy}
                             className="bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center gap-1"
                         >

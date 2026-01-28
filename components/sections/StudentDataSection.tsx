@@ -240,8 +240,8 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                             inputMode="numeric" 
                             placeholder="16 digit angka sesuai KK/Akta" 
                         />
-                        {/* Check Button */}
-                        <div className="absolute top-[38px] right-2">
+                        {/* Check Button - DESKTOP ONLY (Absolute Position) */}
+                        <div className="absolute top-[38px] right-2 hidden sm:block">
                             <button
                                 type="button"
                                 onClick={handleCheckNik}
@@ -257,9 +257,28 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                             </button>
                         </div>
                     </div>
+
+                    {/* Check Button - MOBILE ONLY (Below Input) */}
+                    <div className="mt-2 sm:hidden text-right">
+                         <button
+                            type="button"
+                            onClick={handleCheckNik}
+                            disabled={nikStatus === 'loading'}
+                            className={`
+                                w-full text-xs font-bold px-4 py-3 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2
+                                ${nikStatus === 'loading' ? 'bg-stone-200 text-stone-500 cursor-wait' : 'bg-white border border-primary-200 text-primary-700 hover:bg-primary-50 active:scale-95'}
+                                ${nikStatus === 'exists' ? 'bg-red-50 text-red-700 border-red-200' : ''}
+                                ${nikStatus === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ''}
+                            `}
+                        >
+                            {nikStatus === 'loading' && <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>}
+                            {nikStatus === 'loading' ? 'Sedang Mengecek...' : 'Cek Ketersediaan NIK'}
+                        </button>
+                    </div>
+
                     {/* Status Message */}
                     {nikStatus !== 'idle' && (
-                         <p className={`mt-1 ml-1 text-xs font-bold flex items-center gap-1
+                         <p className={`mt-2 ml-1 text-xs font-bold flex items-center gap-1
                             ${nikStatus === 'exists' ? 'text-red-600' : ''}
                             ${nikStatus === 'available' ? 'text-emerald-600' : ''}
                             ${nikStatus === 'error' ? 'text-amber-600' : ''}

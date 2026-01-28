@@ -343,7 +343,7 @@ const App: React.FC = () => {
         if (!result.success) {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
-            const firstError = Object.keys(errors)[0];
+            const firstError = Object.keys(errors)[0] as string;
             if (firstError) scrollToError(firstError);
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
@@ -451,7 +451,7 @@ const App: React.FC = () => {
         setErrors(validationErrors);
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
-             const firstError = Object.keys(validationErrors)[0];
+             const firstError = Object.keys(validationErrors)[0] as string;
              if (firstError) scrollToError(firstError);
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
