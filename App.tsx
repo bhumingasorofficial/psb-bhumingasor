@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
-import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel } from './types';
+import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel, ParentEducation, ParentIncome } from './types';
 import { validateStep } from './utils/validation';
 import StudentDataSection from './components/sections/StudentDataSection';
 import ParentDataSection from './components/sections/ParentDataSection';
@@ -22,7 +21,7 @@ const WA_NUMBER_MALE = '6281333123600';   // Admin Putra
 const WA_NUMBER_FEMALE = '6282231314199'; // Admin Putri
 const WA_NUMBER_HELP = '6281333123600';   // Admin Bantuan (Umum)
 
-const STORAGE_KEY = 'psb_pesantren_draft_v1';
+const STORAGE_KEY = 'psb_pesantren_draft_v2'; // Changed key version due to structural changes
 
 // --- STATIC UI COMPONENTS (Moved Outside App for Better Performance) ---
 
@@ -61,35 +60,69 @@ const App: React.FC = () => {
     const initialFormData: FormData = {
         botField: '',
         infoSource: [],
+        
+        // Sekolah
         schoolChoice: SchoolLevel.SMP,
+        smkMajor: '', // New
+
+        // Identitas
         fullName: '',
+        gender: Gender.LakiLaki,
         nik: '', 
+        nisn: '',
         birthPlace: '',
         birthDate: '',
+        previousSchool: '',
+        
+        // Alamat
         province: '',
         city: '',
         district: '',
-        village: '', // ADDED
-        rt: '',      // ADDED
-        rw: '',      // ADDED
-        postalCode: '', // ADDED
+        village: '', 
         specificAddress: '',
-        previousSchool: '',
-        nisn: '',
-        gender: Gender.LakiLaki,
+        rt: '',      
+        rw: '',      
+        postalCode: '', 
+
+        // Kontak (Dipindah ke section Siswa di backend/validation, tapi di state tetap sama)
+        parentWaNumber: '',
+
+        // Data Periodik (New)
+        height: '',
+        weight: '',
+        siblingCount: '',
+        childOrder: '',
+
+        // Ayah
         fatherName: '',
+        fatherEducation: ParentEducation.SMA, // Default
         fatherOccupation: ParentOccupation.WIRASWASTA,
         fatherOccupationOther: '',
+        fatherIncome: ParentIncome.SATU_DUA_JT,
+
+        // Ibu
         motherName: '',
+        motherEducation: ParentEducation.SMA, // Default
         motherOccupation: ParentOccupation.IRT,
         motherOccupationOther: '',
-        parentWaNumber: '',
+        motherIncome: ParentIncome.TIDAK_BERPENGHASILAN,
+
+        // Wali (Optional)
+        hasGuardian: false,
+        guardianName: '',
+        guardianEducation: '',
+        guardianOccupation: '',
+        guardianOccupationOther: '',
+        guardianIncome: '',
+
+        // Files
         kartuKeluarga: null as any,
         aktaKelahiran: null as any,
         ktpWalimurid: null as any,
         pasFoto: null as any,
         ijazah: null as any,
         buktiPembayaran: null as any,
+        
         termsAgreed: false,
     };
 
@@ -235,29 +268,13 @@ const App: React.FC = () => {
     // --- CHECK NIK FUNCTION ---
     const checkNikAvailability = async (nik: string): Promise<'available' | 'exists' | 'error'> => {
         try {
-            // Note: Since 'no-cors' is usually required for browser-to-GAS calls without a proxy,
-            // we might not receive the JSON response in a strict browser environment.
-            // However, this is the standard implementation if CORS headers were handled or a proxy was used.
             const response = await fetch(`${GOOGLE_SHEET_URL}?t=${Date.now()}`, {
                 method: 'POST',
-                // Important: Using 'no-cors' prevents reading the response body.
-                // If possible, 'cors' should be used, but GAS often redirects which causes issues.
-                // For this implementation, we try standard POST.
                 mode: 'no-cors', 
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ action: 'CHECK_NIK', nik: nik })
             });
-
-            // FALLBACK for "Blind Submit" Architecture:
-            // Since we use no-cors, we can't read the response.
-            // In a real production environment with this architecture, 
-            // we would usually just allow the user to proceed and handle duplicates in the backend 
-            // OR use a different backend (Supabase/Firebase) for reading.
-            // For now, we simulate "available" to let user proceed, 
-            // assuming the backend will eventually handle it or specific proxy is set up.
-            // console.warn("Check NIK: Cannot read response due to CORS. Simulating available.");
             return 'available'; 
-
         } catch (error) {
             console.error("NIK Check Failed", error);
             return 'error';
@@ -266,22 +283,20 @@ const App: React.FC = () => {
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
-        if (name === 'nisn') {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
+        // Numeric filters
+        if (['nisn', 'postalCode', 'height', 'weight', 'siblingCount', 'childOrder'].includes(name)) {
+            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '') }));
             return;
         }
         if (name === 'nik') {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 16) }));
-            return;
-        }
-        if (name === 'postalCode') {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 5) }));
-            return;
+             setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 16) }));
+             return;
         }
         if (name === 'parentWaNumber') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/[^0-9+]/g, '') }));
             return;
         }
+        
         const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
         setFormData(prev => ({ ...prev, [name]: val }));
     }, []);
@@ -309,7 +324,8 @@ const App: React.FC = () => {
     const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         if (typeof value === 'string') setFormData(prev => ({ ...prev, [name]: value.trim() }));
-        if ((name === 'fatherOccupationOther' || name === 'motherOccupationOther') && !value) return;
+        if (name.includes('OccupationOther') && !value) return;
+        
         const fieldSchema = (baseFormSchema.shape as any)[name];
         if (fieldSchema) {
             const result = fieldSchema.safeParse(formData[name as keyof FormData]);
@@ -344,7 +360,7 @@ const App: React.FC = () => {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
             const firstError = Object.keys(errors)[0];
-            if (firstError) scrollToError(firstError as string);
+            if (firstError) scrollToError(String(firstError));
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -367,21 +383,49 @@ const App: React.FC = () => {
             const payload: any = {
                 regId: id,
                 infoSource: formData.infoSource.join(', '),
+                
                 schoolChoice: formData.schoolChoice,
+                smkMajor: formData.schoolChoice === SchoolLevel.SMK ? formData.smkMajor : '-',
+
                 fullName: formData.fullName.trim(),
+                gender: formData.gender,
                 nik: formData.nik.trim(), 
                 nisn: formData.nisn.trim(),
-                gender: formData.gender,
                 birthPlace: formData.birthPlace.trim(),
                 birthDate: formData.birthDate,
                 previousSchool: formData.previousSchool.trim(),
-                fatherName: formData.fatherName.trim(),
-                fatherOccupation: formData.fatherOccupation === ParentOccupation.LAINNYA ? formData.fatherOccupationOther : formData.fatherOccupation,
-                motherName: formData.motherName.trim(),
-                motherOccupation: formData.motherOccupation === ParentOccupation.LAINNYA ? formData.motherOccupationOther : formData.motherOccupation,
+                
+                address: fullAddress, // Combined for old column compatibility if needed, but we send raw too
+
+                // Data Periodik
+                height: formData.height,
+                weight: formData.weight,
+                siblingCount: formData.siblingCount,
+                childOrder: formData.childOrder,
+                
+                // Contact
                 parentWaNumber: formData.parentWaNumber.trim(),
-                address: fullAddress,
-                turnstileToken: turnstileToken // Send Token to Backend (optional verification)
+                
+                // Ayah
+                fatherName: formData.fatherName.trim(),
+                fatherEducation: formData.fatherEducation,
+                fatherOccupation: formData.fatherOccupation === ParentOccupation.LAINNYA ? formData.fatherOccupationOther : formData.fatherOccupation,
+                fatherIncome: formData.fatherIncome,
+
+                // Ibu
+                motherName: formData.motherName.trim(),
+                motherEducation: formData.motherEducation,
+                motherOccupation: formData.motherOccupation === ParentOccupation.LAINNYA ? formData.motherOccupationOther : formData.motherOccupation,
+                motherIncome: formData.motherIncome,
+
+                // Wali
+                hasGuardian: formData.hasGuardian,
+                guardianName: formData.hasGuardian ? formData.guardianName : '-',
+                guardianEducation: formData.hasGuardian ? formData.guardianEducation : '-',
+                guardianOccupation: formData.hasGuardian ? (formData.guardianOccupation === ParentOccupation.LAINNYA ? formData.guardianOccupationOther : formData.guardianOccupation) : '-',
+                guardianIncome: formData.hasGuardian ? formData.guardianIncome : '-',
+
+                turnstileToken: turnstileToken
             };
 
             const processFile = async (field: keyof FormData, base64Key: string, mimeKey: string, label: string) => {
@@ -452,7 +496,7 @@ const App: React.FC = () => {
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
              const firstError = Object.keys(validationErrors)[0];
-             if (firstError) scrollToError(firstError as string);
+             if (firstError) scrollToError(String(firstError));
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }
@@ -497,11 +541,11 @@ const App: React.FC = () => {
                                 <ul className="space-y-3">
                                     <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
                                         <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
-                                        NIK Calon Santri (Lihat KK)
+                                        NIK & NISN (Lihat KK)
                                     </li>
                                     <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
                                         <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
-                                        NISN (Nomor Induk Siswa Nasional)
+                                        Data Penghasilan Ortu
                                     </li>
                                 </ul>
                             </div>
@@ -515,19 +559,11 @@ const App: React.FC = () => {
                                 <ul className="space-y-3">
                                     <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
                                         <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
-                                        Kartu Keluarga & Akta Kelahiran
+                                        KK, Akta & KTP Ortu
                                     </li>
                                     <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
                                         <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
-                                        KTP Orang Tua / Wali
-                                    </li>
-                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium leading-relaxed">
-                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
-                                        Pas Foto 3x4 (Baju Taqwa Putih, Kopyah Hitam, Background Biru)
-                                    </li>
-                                    <li className="flex items-start gap-2 text-sm text-amber-900 font-medium">
-                                        <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> 
-                                        Ijazah SD/MI atau SMP/MTs
+                                        Ijazah/SKL & Pas Foto
                                     </li>
                                 </ul>
                             </div>
@@ -568,7 +604,7 @@ const App: React.FC = () => {
         );
     }
 
-    // --- SUCCESS PAGE MODE (WITH SEPARATE PRINT VIEW) ---
+    // --- SUCCESS PAGE MODE ---
     if (submissionStatus === 'success') {
         const PrintRow = ({ label, value }: { label: string, value: string }) => (
             <tr className="border-b border-stone-100/60">
@@ -605,28 +641,6 @@ const App: React.FC = () => {
                         <div className="flex gap-3">
                             <button onClick={() => window.print()} className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50">Cetak Bukti</button>
                             <button onClick={() => window.location.reload()} className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50">Menu Utama</button>
-                        </div>
-
-                        {/* --- NEW: Mandatory Next Steps Instructions --- */}
-                        <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4 text-left">
-                            <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                Langkah Selanjutnya (Wajib)
-                            </h4>
-                            <ul className="space-y-3">
-                                <li className="flex gap-3 text-xs sm:text-sm text-stone-600 leading-relaxed">
-                                    <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-[10px]">1</span>
-                                    <span>
-                                        Klik tombol <strong className="text-emerald-700">Konfirmasi WhatsApp</strong> di atas untuk melaporkan pendaftaran Anda kepada Admin agar segera diverifikasi.
-                                    </span>
-                                </li>
-                                <li className="flex gap-3 text-xs sm:text-sm text-stone-600 leading-relaxed">
-                                    <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-[10px]">2</span>
-                                    <span>
-                                        Klik <strong className="text-stone-800">Cetak Bukti</strong>, lalu simpan sebagai PDF atau cetak fisik. Bukti ini <strong>wajib dibawa</strong> saat melakukan daftar ulang di Pondok Pesantren Bhumi Ngasor.
-                                    </span>
-                                </li>
-                            </ul>
                         </div>
                     </div>
                 </div>

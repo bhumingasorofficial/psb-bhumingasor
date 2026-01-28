@@ -1,13 +1,13 @@
 
 import React, { useEffect, useRef } from 'react';
-import { FormData, FormErrors } from '../../types';
+import { FormData, FormErrors, SchoolLevel } from '../../types';
 
 interface Props {
     formData: FormData;
     errors: FormErrors;
     handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onEditStep: (step: number) => void;
-    setTurnstileToken: (token: string) => void; // New Prop
+    setTurnstileToken: (token: string) => void; 
 }
 
 const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEditStep, setTurnstileToken }) => {
@@ -15,25 +15,32 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
 
     // Initialize Turnstile
     useEffect(() => {
-        // Use Cloudflare Testing Site Key: 1x00000000000000000000AA
-        // Use Dummy Secret for backend if needed: 1x0000000000000000000000000000000AA
+        // Site Key Produksi dari Cloudflare (UPDATED)
+        const siteKey = '0x4AAAAAACU2RCccspWW1RvL';
+
         if (turnstileRef.current && (window as any).turnstile) {
-            (window as any).turnstile.render(turnstileRef.current, {
-                sitekey: '1x00000000000000000000AA', 
-                callback: function(token: string) {
-                    setTurnstileToken(token);
-                },
-                'expired-callback': function() {
-                    setTurnstileToken('');
-                },
-            });
+            turnstileRef.current.innerHTML = '';
+            
+            try {
+                (window as any).turnstile.render(turnstileRef.current, {
+                    sitekey: siteKey, 
+                    callback: function(token: string) {
+                        setTurnstileToken(token);
+                    },
+                    'expired-callback': function() {
+                        setTurnstileToken('');
+                    },
+                });
+            } catch (e) {
+                console.error("Turnstile render error:", e);
+            }
         }
     }, [setTurnstileToken]);
 
     const DataRow = ({ label, value }: { label: string, value: string }) => (
         <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-stone-100 last:border-0 gap-1 sm:gap-0">
             <span className="text-[10px] sm:text-[11px] font-bold text-stone-400 uppercase tracking-wider">{label}</span>
-            <span className="text-sm font-semibold text-stone-800 break-words">{value}</span>
+            <span className="text-sm font-semibold text-stone-800 break-words">{value || '-'}</span>
         </div>
     );
 
@@ -65,22 +72,15 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Kolom Kiri: Ringkasan Data */}
                 <div className="space-y-6">
-                    <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
-                        <SectionHeader title="Sumber Informasi" step={1} />
-                        <div className="flex flex-wrap gap-2">
-                            {formData.infoSource && formData.infoSource.map((src, i) => (
-                                <span key={i} className="px-3 py-1 bg-white border border-stone-200 text-stone-600 text-[10px] font-bold rounded-full">
-                                    {src}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
+                    
                     <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
                         <SectionHeader title="Biodata Santri" step={2} />
                         <div className="mb-3 bg-primary-50 p-2 rounded text-center border border-primary-100">
                             <span className="text-xs text-primary-600 font-bold uppercase block mb-1">Jenjang Pilihan</span>
-                            <span className="text-base text-primary-800 font-bold">{formData.schoolChoice}</span>
+                            <span className="text-base text-primary-800 font-bold">
+                                {formData.schoolChoice} 
+                                {formData.schoolChoice === SchoolLevel.SMK && <span className="block text-sm text-primary-600 font-medium">({formData.smkMajor})</span>}
+                            </span>
                         </div>
                         <DataRow label="Nama Lengkap" value={formData.fullName} />
                         <DataRow label="NIK" value={formData.nik} />
@@ -91,13 +91,32 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                             label="Alamat Lengkap" 
                             value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
                         />
+                        <DataRow label="Kontak HP Utama" value={formData.parentWaNumber} />
+                    </div>
+
+                     <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
+                        <SectionHeader title="Data Periodik" step={2} />
+                        <div className="grid grid-cols-2 gap-x-4">
+                             <DataRow label="Tinggi" value={`${formData.height} cm`} />
+                             <DataRow label="Berat" value={`${formData.weight} kg`} />
+                             <DataRow label="Saudara" value={`${formData.siblingCount} org`} />
+                             <DataRow label="Anak Ke" value={formData.childOrder} />
+                        </div>
                     </div>
 
                     <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
-                        <SectionHeader title="Wali Santri" step={3} />
-                        <DataRow label="Ayah" value={formData.fatherName} />
-                        <DataRow label="Ibu" value={formData.motherName} />
-                        <DataRow label="No. WhatsApp" value={formData.parentWaNumber} />
+                        <SectionHeader title="Data Ortu & Wali" step={3} />
+                        <DataRow label="Nama Ayah" value={formData.fatherName} />
+                        <DataRow label="Pekerjaan Ayah" value={formData.fatherOccupation} />
+                        <DataRow label="Nama Ibu" value={formData.motherName} />
+                        <DataRow label="Pekerjaan Ibu" value={formData.motherOccupation} />
+                        {formData.hasGuardian && (
+                             <div className="mt-2 pt-2 border-t border-stone-200">
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Wali Murid</span>
+                                <DataRow label="Nama" value={formData.guardianName || '-'} />
+                                <DataRow label="Hubungan" value="Wali" />
+                             </div>
+                        )}
                     </div>
                 </div>
 
@@ -109,7 +128,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                             {[
                                 { name: 'Kartu Keluarga', file: formData.kartuKeluarga },
                                 { name: 'Akta Kelahiran', file: formData.aktaKelahiran },
-                                { name: 'KTP Wali', file: formData.ktpWalimurid },
+                                { name: 'KTP Orang Tua/Wali', file: formData.ktpWalimurid },
                                 { name: 'Pas Foto Santri', file: formData.pasFoto },
                                 { name: 'Ijazah Terakhir', file: formData.ijazah },
                             ].map((doc, idx) => (

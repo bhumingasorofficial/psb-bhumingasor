@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
-import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel } from './types';
+import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel, ParentEducation, ParentIncome } from './types';
 import { validateStep } from './utils/validation';
 import StudentDataSection from './components/sections/StudentDataSection';
 import ParentDataSection from './components/sections/ParentDataSection';
@@ -235,29 +234,13 @@ const App: React.FC = () => {
     // --- CHECK NIK FUNCTION ---
     const checkNikAvailability = async (nik: string): Promise<'available' | 'exists' | 'error'> => {
         try {
-            // Note: Since 'no-cors' is usually required for browser-to-GAS calls without a proxy,
-            // we might not receive the JSON response in a strict browser environment.
-            // However, this is the standard implementation if CORS headers were handled or a proxy was used.
             const response = await fetch(`${GOOGLE_SHEET_URL}?t=${Date.now()}`, {
                 method: 'POST',
-                // Important: Using 'no-cors' prevents reading the response body.
-                // If possible, 'cors' should be used, but GAS often redirects which causes issues.
-                // For this implementation, we try standard POST.
                 mode: 'no-cors', 
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ action: 'CHECK_NIK', nik: nik })
             });
-
-            // FALLBACK for "Blind Submit" Architecture:
-            // Since we use no-cors, we can't read the response.
-            // In a real production environment with this architecture, 
-            // we would usually just allow the user to proceed and handle duplicates in the backend 
-            // OR use a different backend (Supabase/Firebase) for reading.
-            // For now, we simulate "available" to let user proceed, 
-            // assuming the backend will eventually handle it or specific proxy is set up.
-            // console.warn("Check NIK: Cannot read response due to CORS. Simulating available.");
             return 'available'; 
-
         } catch (error) {
             console.error("NIK Check Failed", error);
             return 'error';
@@ -266,17 +249,14 @@ const App: React.FC = () => {
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
-        if (name === 'nisn') {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
+        // Numeric filters
+        if (['nisn', 'postalCode', 'height', 'weight', 'siblingCount', 'childOrder'].includes(name)) {
+            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '') }));
             return;
         }
         if (name === 'nik') {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 16) }));
-            return;
-        }
-        if (name === 'postalCode') {
-            setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 5) }));
-            return;
+             setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 16) }));
+             return;
         }
         if (name === 'parentWaNumber') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/[^0-9+]/g, '') }));
@@ -309,7 +289,8 @@ const App: React.FC = () => {
     const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         if (typeof value === 'string') setFormData(prev => ({ ...prev, [name]: value.trim() }));
-        if ((name === 'fatherOccupationOther' || name === 'motherOccupationOther') && !value) return;
+        if (name.includes('OccupationOther') && !value) return;
+        
         const fieldSchema = (baseFormSchema.shape as any)[name];
         if (fieldSchema) {
             const result = fieldSchema.safeParse(formData[name as keyof FormData]);
@@ -344,7 +325,7 @@ const App: React.FC = () => {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
             const firstError = Object.keys(errors)[0];
-            if (firstError) scrollToError(firstError as string);
+            if (firstError) scrollToError(String(firstError));
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -452,7 +433,7 @@ const App: React.FC = () => {
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
              const firstError = Object.keys(validationErrors)[0];
-             if (firstError) scrollToError(firstError as string);
+             if (firstError) scrollToError(String(firstError));
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }
@@ -568,7 +549,7 @@ const App: React.FC = () => {
         );
     }
 
-    // --- SUCCESS PAGE MODE (WITH SEPARATE PRINT VIEW) ---
+    // --- SUCCESS PAGE MODE ---
     if (submissionStatus === 'success') {
         const PrintRow = ({ label, value }: { label: string, value: string }) => (
             <tr className="border-b border-stone-100/60">
@@ -610,200 +591,4 @@ const App: React.FC = () => {
                         {/* --- NEW: Mandatory Next Steps Instructions --- */}
                         <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4 text-left">
                             <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                Langkah Selanjutnya (Wajib)
-                            </h4>
-                            <ul className="space-y-3">
-                                <li className="flex gap-3 text-xs sm:text-sm text-stone-600 leading-relaxed">
-                                    <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-[10px]">1</span>
-                                    <span>
-                                        Klik tombol <strong className="text-emerald-700">Konfirmasi WhatsApp</strong> di atas untuk melaporkan pendaftaran Anda kepada Admin agar segera diverifikasi.
-                                    </span>
-                                </li>
-                                <li className="flex gap-3 text-xs sm:text-sm text-stone-600 leading-relaxed">
-                                    <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-[10px]">2</span>
-                                    <span>
-                                        Klik <strong className="text-stone-800">Cetak Bukti</strong>, lalu simpan sebagai PDF atau cetak fisik. Bukti ini <strong>wajib dibawa</strong> saat melakukan daftar ulang di Pondok Pesantren Bhumi Ngasor.
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                {/* --- PRINT VIEW (VISIBLE ONLY ON PRINT) --- */}
-                {/* Optimized to fit 1 Page A4 */}
-                <div className="print-only bg-white p-8 text-black w-full max-w-[210mm] mx-auto min-h-screen relative box-border">
-                    {/* Kop Surat Berwarna & Terstruktur */}
-                    <div className="flex items-center justify-between border-b-[3px] border-emerald-800 pb-4 mb-6 relative">
-                         {/* Green Line Accent */}
-                         <div className="absolute -bottom-1.5 left-0 w-full h-[1.5px] bg-emerald-500"></div>
-
-                        <div className="w-24 h-24 flex-shrink-0 mr-4">
-                            <img src={LOGO_URL} alt="Logo" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="flex-1 text-center">
-                            <h3 className="text-lg font-bold uppercase tracking-widest text-emerald-900 font-serif mb-1">YAYASAN PONDOK PESANTREN</h3>
-                            <h1 className="text-3xl font-black uppercase mb-1 text-stone-900 font-serif tracking-tight leading-none scale-y-110">AN-NUR HIDAYATUS SALAM</h1>
-                            <h1 className="text-3xl font-black uppercase mb-3 text-emerald-700 font-serif tracking-[0.2em] leading-none">BHUMI NGASOR</h1>
-                            <p className="text-[10px] italic text-stone-600 font-medium leading-tight">
-                                Sekretariat: Jl. Pendhopo Kamulyan RT.02 RW.01 Dsn. Bakalan Kec. Bululawang Kab. Malang<br/>
-                                Email: <span className="text-emerald-700">bhumingasorofficial@gmail.com</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Judul Dokumen */}
-                    <div className="text-center mb-6">
-                        <h3 className="text-xl font-black text-stone-900 underline decoration-2 decoration-emerald-500 underline-offset-4 mb-1 uppercase tracking-wider">TANDA BUKTI PENDAFTARAN</h3>
-                        <p className="text-xs font-bold text-stone-500 uppercase tracking-[0.3em]">TAHUN AJARAN 2026/2027</p>
-                    </div>
-
-                    {/* ID Card Box Berwarna - Lebih Compact */}
-                    <div className="border-l-4 border-emerald-500 bg-emerald-50/50 rounded-r-lg p-4 mb-6 flex justify-between items-center shadow-sm">
-                        <div>
-                            <p className="text-[10px] uppercase font-extrabold text-emerald-800 mb-0.5 tracking-wider">NOMOR REGISTRASI:</p>
-                            <p className="text-3xl font-mono font-black tracking-widest text-stone-900 leading-none">{registrationId}</p>
-                        </div>
-                        <div className="text-right">
-                             <p className="text-[10px] uppercase font-extrabold text-emerald-800 mb-0.5 tracking-wider">TANGGAL DAFTAR:</p>
-                             <p className="text-lg font-bold text-stone-800 leading-none">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
-                        </div>
-                    </div>
-
-                    {/* Biodata Table Berwarna - Padding dikurangi */}
-                    <div className="mb-6">
-                        <table className="w-full text-xs">
-                            <tbody>
-                                <PrintRow label="JENJANG PENDIDIKAN" value={formData.schoolChoice} />
-                                <PrintRow label="NAMA LENGKAP" value={formData.fullName} />
-                                <PrintRow label="NISN" value={formData.nisn} />
-                                <PrintRow label="TEMPAT, TGL LAHIR" value={`${formData.birthPlace}, ${formData.birthDate}`} />
-                                <PrintRow label="JENIS KELAMIN" value={formData.gender} />
-                                <PrintRow 
-                                    label="ALAMAT LENGKAP" 
-                                    value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
-                                />
-                                <PrintRow label="NAMA ORANG TUA" value={`${formData.fatherName} / ${formData.motherName}`} />
-                                <PrintRow label="NO. WHATSAPP" value={formData.parentWaNumber} />
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Footer Info Box - Lebih Compact */}
-                    <div className="bg-amber-50 p-3 border-l-4 border-amber-400 text-[10px] mb-8 rounded-r-lg">
-                        <strong className="text-amber-900 uppercase tracking-wide block mb-1">CATATAN PENTING:</strong>
-                        <ul className="list-disc pl-4 space-y-0.5 text-stone-700 font-medium">
-                            <li>Kartu ini adalah bukti sah pendaftaran santri baru Pondok Pesantren Bhumi Ngasor.</li>
-                            <li>Harap simpan kartu ini dan dibawa saat melakukan daftar ulang atau tes masuk.</li>
-                            <li>Informasi lebih lanjut dapat menghubungi Panitia PSB melalui nomor WhatsApp yang tertera di website.</li>
-                        </ul>
-                    </div>
-
-                    {/* Tanda Tangan - Side by Side */}
-                    <div className="flex justify-between items-end px-4 mt-auto">
-                        <div className="text-center w-48">
-                            <p className="mb-16 text-xs font-bold text-stone-600">Panitia PSB,</p>
-                            <div className="border-b border-stone-800 w-full mb-1"></div>
-                            <p className="text-[10px] text-stone-400 font-bold">( Tanda Tangan & Stempel )</p>
-                        </div>
-                        <div className="text-center w-48">
-                            <p className="mb-16 text-xs font-bold text-stone-600">Orang Tua / Wali,</p>
-                            <p className="text-sm font-bold text-stone-900 border-b border-stone-800 uppercase pb-1 mb-1">
-                                ( {formData.fatherName} )
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </>
-        );
-    }
-
-    // --- MAIN FORM MODE ---
-    return (
-        <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center py-6 sm:py-12 px-3 sm:px-4 no-print">
-            <Toast toasts={toasts} removeToast={removeToast} />
-            
-            {/* NEW: Auto-save Indicator (Visual Comfort) */}
-            <div className={`fixed top-4 right-4 z-50 transition-all duration-300 ${isSaving ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-                <div className="bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-500 px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                    Menyimpan...
-                </div>
-            </div>
-
-            {/* Loading Overlay with Feedback */}
-            {loadingStatus && (
-                <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-6"></div>
-                    <p className="font-bold tracking-widest text-emerald-800 animate-pulse text-sm uppercase">{loadingStatus}</p>
-                    <p className="text-xs text-slate-400 mt-2">Mohon jangan tutup halaman ini</p>
-                </div>
-            )}
-
-            {isDraftLoaded && (
-                <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-amber-100 text-amber-800 px-6 py-2 rounded-full shadow-sm text-xs font-bold flex items-center gap-2 animate-fade-up border border-amber-200">
-                    <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span> Draft Loaded
-                </div>
-            )}
-
-            <FloatingHelp />
-
-            {/* BRAND HEADER - OUTSIDE CARD */}
-            <BrandHeader />
-
-            {/* MAIN CARD CONTAINER */}
-            <div className="w-full max-w-4xl bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] p-5 sm:p-12 relative">
-                
-                {/* STEPPER INSIDE CARD */}
-                <div className="mb-8 sm:mb-14">
-                    <Stepper steps={STEPS} currentStep={currentStep} />
-                </div>
-                
-                <form onSubmit={handleSubmit}>
-                    <div className="opacity-0 absolute h-0 w-0 overflow-hidden"><input type="text" name="botField" value={formData.botField} onChange={handleChange} tabIndex={-1} autoComplete="off" /></div>
-                    
-                    <div className="min-h-[300px]">
-                        {currentStep === 1 && <SurveySection formData={formData} errors={errors} onSelectionChange={handleSurveyChange} />}
-                        {currentStep === 2 && <StudentDataSection formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} checkNikAvailability={checkNikAvailability} />}
-                        {currentStep === 3 && <ParentDataSection formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />}
-                        {currentStep === 4 && <DocumentUploadSection formData={formData} errors={errors} handleFileChange={handleFileChange} handleFileClear={handleFileClear} />}
-                        {currentStep === 5 && <PaymentSection formData={formData} errors={errors} handleFileChange={handleFileChange} handleFileClear={handleFileClear} />}
-                        {currentStep === 6 && <ReviewSection formData={formData} errors={errors} handleChange={handleChange} onEditStep={jumpToStep} setTurnstileToken={setTurnstileToken} />}
-                    </div>
-
-                    {/* NAVIGATION BUTTONS */}
-                    <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-between gap-4">
-                        {currentStep > 1 ? (
-                            <button 
-                                type="button" 
-                                onClick={() => { setCurrentStep(p => p - 1); window.scrollTo({top:0, behavior:'smooth'}); }} 
-                                className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all text-sm"
-                            >
-                                Kembali
-                            </button>
-                        ) : (
-                            <div className="hidden sm:block"></div> 
-                        )}
-                        
-                        <button 
-                            type="submit" 
-                            disabled={!!loadingStatus || (currentStep === 6 && !formData.termsAgreed)} 
-                            className="w-full sm:w-auto px-10 py-4 rounded-xl bg-emerald-600 text-white font-bold shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-                        >
-                            {currentStep < 6 ? 'Langkah Selanjutnya' : 'Kirim Formulir'}
-                            {currentStep < 6 && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>}
-                        </button>
-                    </div>
-                </form>
-
-            </div>
-            
-            <div className="mt-8 sm:mt-12 text-center text-slate-400 text-[10px] font-bold tracking-widest uppercase">
-                © 2026 PONDOK PESANTREN BHUMI NGASOR
-            </div>
-        </div>
-    );
-};
-
-export default App;
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.6

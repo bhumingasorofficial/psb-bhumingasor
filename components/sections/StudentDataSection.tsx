@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { FormData, FormErrors, Gender, SchoolLevel } from '../../types';
+import { FormData, FormErrors, Gender, SchoolLevel, SmkMajor } from '../../types';
 import Input from '../Input';
 import Select from '../Select';
 import SearchableSelect from '../SearchableSelect';
@@ -10,7 +10,7 @@ interface Props {
     errors: FormErrors;
     handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
     handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
-    checkNikAvailability: (nik: string) => Promise<'available' | 'exists' | 'error'>; // NEW PROP
+    checkNikAvailability: (nik: string) => Promise<'available' | 'exists' | 'error'>;
 }
 
 // Interfaces for API Data
@@ -19,7 +19,6 @@ interface Region {
     name: string;
 }
 
-// Helper: Convert Uppercase "JAWA TIMUR" to Title Case "Jawa Timur"
 const toTitleCase = (str: string) => {
     return str.replace(/\w\S*/g, (txt) => {
         return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -109,7 +108,6 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
     const [loadingDist, setLoadingDist] = useState(false);
     const [loadingVill, setLoadingVill] = useState(false);
 
-    // Initial Fetch Provinces
     useEffect(() => {
         const fetchProvinces = async () => {
             setLoadingProv(true);
@@ -192,29 +190,37 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Section Header */}
+            {/* Header */}
             <div className="flex items-start sm:items-center gap-4 border-b border-stone-200 pb-6">
                 <div className="w-12 h-12 rounded-2xl bg-primary-100 flex items-center justify-center text-primary-700 shrink-0 shadow-sm border border-primary-200">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </div>
                 <div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-stone-800 font-serif">Biodata Santri</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold text-stone-800 font-serif">A. Identitas Peserta Didik</h3>
                     <p className="text-sm text-stone-500 mt-1">Isi data pribadi calon santri sesuai dengan dokumen resmi (Ijazah/Akta).</p>
                 </div>
             </div>
             
             <div className="grid grid-cols-1 gap-y-6 sm:gap-y-8 sm:gap-x-8 sm:grid-cols-6">
                 
+                {/* School Choice Box */}
                 <div className="sm:col-span-6">
                     <div className="bg-gradient-to-r from-primary-50 to-white p-6 rounded-2xl border border-primary-100 shadow-sm">
-                        <Select label="Daftar Untuk Jenjang" id="schoolChoice" name="schoolChoice" value={formData.schoolChoice} onChange={handleChange} onBlur={handleBlur} error={errors.schoolChoice} required>
-                            {Object.values(SchoolLevel).map(level => <option key={level} value={level}>{level}</option>)}
-                        </Select>
-                        <div className="mt-3 flex gap-2 items-start">
-                            <svg className="w-4 h-4 text-primary-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <p className="text-xs text-primary-700 font-medium leading-relaxed">
-                                Mohon pastikan pilihan jenjang pendidikan (SMP/SMK) sudah benar.
-                            </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <Select label="Daftar Untuk Jenjang" id="schoolChoice" name="schoolChoice" value={formData.schoolChoice} onChange={handleChange} onBlur={handleBlur} error={errors.schoolChoice} required>
+                                    {Object.values(SchoolLevel).map(level => <option key={level} value={level}>{level}</option>)}
+                                </Select>
+                            </div>
+                            {formData.schoolChoice === SchoolLevel.SMK && (
+                                <div className="animate-in fade-in slide-in-from-left-4">
+                                     <Select label="Pilih Jurusan SMK" id="smkMajor" name="smkMajor" value={formData.smkMajor} onChange={handleChange} onBlur={handleBlur} error={errors.smkMajor} required>
+                                        <option value="" disabled>-- Pilih Jurusan --</option>
+                                        <option value={SmkMajor.DKV}>{SmkMajor.DKV}</option>
+                                        <option value={SmkMajor.TKR}>{SmkMajor.TKR}</option>
+                                    </Select>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -222,8 +228,14 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                 <div className="sm:col-span-6">
                     <Input label="Nama Lengkap" id="fullName" name="fullName" type="text" value={formData.fullName} onChange={handleChange} onBlur={handleBlur} error={errors.fullName} required autoComplete="name" placeholder="Masukkan nama sesuai Ijazah/Akta" />
                 </div>
+                
+                 <div className="sm:col-span-3">
+                    <Select label="Jenis Kelamin" id="gender" name="gender" value={formData.gender} onChange={handleChange} onBlur={handleBlur} error={errors.gender} required>
+                        {Object.values(Gender).map(g => <option key={g} value={g}>{g}</option>)}
+                    </Select>
+                </div>
 
-                <div className="sm:col-span-6">
+                <div className="sm:col-span-3">
                     <div className="relative">
                         <Input 
                             label="NIK (Nomor Induk Kependudukan)" 
@@ -240,94 +252,29 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                             inputMode="numeric" 
                             placeholder="16 digit angka sesuai KK/Akta" 
                         />
-                        {/* Check Button - DESKTOP ONLY (Absolute Position) */}
                         <div className="absolute top-[38px] right-2 hidden sm:block">
                             <button
                                 type="button"
                                 onClick={handleCheckNik}
                                 disabled={nikStatus === 'loading'}
-                                className={`
-                                    text-xs font-bold px-3 py-1.5 rounded-lg transition-all shadow-sm
-                                    ${nikStatus === 'loading' ? 'bg-stone-200 text-stone-500 cursor-wait' : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'}
-                                    ${nikStatus === 'exists' ? 'bg-red-100 text-red-700 border-red-200' : ''}
-                                    ${nikStatus === 'available' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ''}
-                                `}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all shadow-sm ${nikStatus === 'loading' ? 'bg-stone-200 text-stone-500 cursor-wait' : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'} ${nikStatus === 'exists' ? 'bg-red-100 text-red-700 border-red-200' : ''} ${nikStatus === 'available' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ''}`}
                             >
                                 {nikStatus === 'loading' ? 'Mengecek...' : 'Cek Ketersediaan'}
                             </button>
                         </div>
                     </div>
-
-                    {/* Check Button - MOBILE ONLY (Below Input) */}
+                    {/* Mobile Button Check */}
                     <div className="mt-2 sm:hidden text-right">
-                         <button
-                            type="button"
-                            onClick={handleCheckNik}
-                            disabled={nikStatus === 'loading'}
-                            className={`
-                                w-full text-xs font-bold px-4 py-3 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2
-                                ${nikStatus === 'loading' ? 'bg-stone-200 text-stone-500 cursor-wait' : 'bg-white border border-primary-200 text-primary-700 hover:bg-primary-50 active:scale-95'}
-                                ${nikStatus === 'exists' ? 'bg-red-50 text-red-700 border-red-200' : ''}
-                                ${nikStatus === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ''}
-                            `}
-                        >
-                            {nikStatus === 'loading' && <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>}
-                            {nikStatus === 'loading' ? 'Sedang Mengecek...' : 'Cek Ketersediaan NIK'}
-                        </button>
+                         <button type="button" onClick={handleCheckNik} disabled={nikStatus === 'loading'} className="text-xs font-bold text-primary-700 underline">{nikStatus === 'loading' ? 'Sedang Mengecek...' : 'Cek Ketersediaan NIK'}</button>
                     </div>
-
-                    {/* Status Message */}
                     {nikStatus !== 'idle' && (
-                         <p className={`mt-2 ml-1 text-xs font-bold flex items-center gap-1
-                            ${nikStatus === 'exists' ? 'text-red-600' : ''}
-                            ${nikStatus === 'available' ? 'text-emerald-600' : ''}
-                            ${nikStatus === 'error' ? 'text-amber-600' : ''}
-                         `}>
-                            {nikStatus === 'exists' && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
-                            {nikStatus === 'available' && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                         <p className={`mt-2 ml-1 text-xs font-bold flex items-center gap-1 ${nikStatus === 'exists' ? 'text-red-600' : ''} ${nikStatus === 'available' ? 'text-emerald-600' : ''} ${nikStatus === 'error' ? 'text-amber-600' : ''}`}>
                             {nikMessage}
                          </p>
                     )}
                 </div>
-                
-                <div className="sm:col-span-3">
-                    <Input label="Tempat Lahir" id="birthPlace" name="birthPlace" type="text" value={formData.birthPlace} onChange={handleChange} onBlur={handleBlur} error={errors.birthPlace} required placeholder="Contoh: Jakarta" />
-                </div>
-                
-                <div className="sm:col-span-3">
-                    <label className="block text-sm font-bold text-stone-600 mb-2 ml-1">
-                        Tanggal Lahir <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="relative">
-                            <select value={day} onChange={(e) => handleDatePartChange('day', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none">
-                                <option value="" disabled>Tgl</option>
-                                {dates.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                        </div>
-                        <div className="relative">
-                            <select value={month} onChange={(e) => handleDatePartChange('month', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none">
-                                <option value="" disabled>Bln</option>
-                                {months.map(m => <option key={m.value} value={m.value}>{m.label.substring(0, 3)}</option>)}
-                            </select>
-                        </div>
-                        <div className="relative">
-                            <select value={year} onChange={(e) => handleDatePartChange('year', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none">
-                                <option value="" disabled>Thn</option>
-                                {years.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    {errors.birthDate && <p className="mt-2 text-xs font-semibold text-red-600 ml-1">{errors.birthDate}</p>}
-                </div>
 
-                <div className="sm:col-span-3">
-                    <Select label="Jenis Kelamin" id="gender" name="gender" value={formData.gender} onChange={handleChange} onBlur={handleBlur} error={errors.gender} required>
-                        {Object.values(Gender).map(g => <option key={g} value={g}>{g}</option>)}
-                    </Select>
-                </div>
-
-                <div className="sm:col-span-3">
+                 <div className="sm:col-span-3">
                     <Input 
                         label="NISN" 
                         id="nisn" 
@@ -345,18 +292,34 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                         topRightLabel={
                             <a href="https://nisn.data.kemdikbud.go.id/index.php/Cindex/formcaribynama/" target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors">
                                 Cek NISN Online
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             </a>
                         }
                     />
+                </div>
+                
+                <div className="sm:col-span-3">
+                    <Input label="Tempat Lahir" id="birthPlace" name="birthPlace" type="text" value={formData.birthPlace} onChange={handleChange} onBlur={handleBlur} error={errors.birthPlace} required placeholder="Contoh: Jakarta" />
+                </div>
+                
+                <div className="sm:col-span-6">
+                    <label className="block text-sm font-bold text-stone-600 mb-2 ml-1">
+                        Tanggal Lahir <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <select value={day} onChange={(e) => handleDatePartChange('day', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none"><option value="" disabled>Tgl</option>{dates.map(d => <option key={d} value={d}>{d}</option>)}</select>
+                        <select value={month} onChange={(e) => handleDatePartChange('month', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none"><option value="" disabled>Bln</option>{months.map(m => <option key={m.value} value={m.value}>{m.label.substring(0, 3)}</option>)}</select>
+                        <select value={year} onChange={(e) => handleDatePartChange('year', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none"><option value="" disabled>Thn</option>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                    </div>
+                    {errors.birthDate && <p className="mt-2 text-xs font-semibold text-red-600 ml-1">{errors.birthDate}</p>}
                 </div>
 
                 <div className="sm:col-span-6">
                     <Input label="Asal Sekolah (SD/MI/SMP/MTs)" id="previousSchool" name="previousSchool" type="text" value={formData.previousSchool} onChange={handleChange} onBlur={handleBlur} error={errors.previousSchool} required placeholder="Nama sekolah sebelumnya" />
                 </div>
-                
+
+                 {/* --- SECTION B: ALAMAT --- */}
                 <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
-                    <h4 className="text-sm font-bold text-stone-700 mb-4">Alamat Tempat Tinggal (Sesuai KK)</h4>
+                    <h3 className="text-lg font-bold text-stone-800 font-serif mb-4">B. Alamat Tempat Tinggal</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-6 gap-x-6 gap-y-4">
                         <div className="sm:col-span-3">
                             <SearchableSelect label="Provinsi" id="province" value={formData.province} options={provinces} onChange={handleProvinceChange} loading={loadingProv} error={errors.province} required placeholder="Pilih Provinsi" />
@@ -371,7 +334,7 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                             <SearchableSelect label="Desa / Kelurahan" id="village" value={formData.village} options={villages} onChange={(val) => updateField('village', val)} loading={loadingVill} disabled={!formData.district || villages.length === 0} error={errors.village} required placeholder={!formData.district ? "Pilih Kecamatan Dulu" : "Pilih Desa/Kelurahan"} />
                         </div>
                         <div className="sm:col-span-6">
-                             <Input label="Detail Jalan / Dusun" id="specificAddress" name="specificAddress" type="text" value={formData.specificAddress} onChange={handleChange} onBlur={handleBlur} error={errors.specificAddress} required placeholder="Jl. Mawar No. 12 / Dusun A" />
+                             <Input label="Jalan / Dusun / No. Rumah" id="specificAddress" name="specificAddress" type="text" value={formData.specificAddress} onChange={handleChange} onBlur={handleBlur} error={errors.specificAddress} required placeholder="Contoh: Jl. Merdeka No. 10" />
                         </div>
                         <div className="sm:col-span-2">
                              <Input label="RT" id="rt" name="rt" type="text" inputMode="numeric" value={formData.rt} onChange={handleChange} onBlur={handleBlur} error={errors.rt} required placeholder="001" />
@@ -382,6 +345,38 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                         <div className="sm:col-span-2">
                              <Input label="Kode Pos" id="postalCode" name="postalCode" type="text" inputMode="numeric" maxLength={5} value={formData.postalCode} onChange={handleChange} onBlur={handleBlur} error={errors.postalCode} required placeholder="651xx" />
                         </div>
+                    </div>
+                </div>
+
+                {/* --- SECTION C: KONTAK --- */}
+                 <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
+                    <h3 className="text-lg font-bold text-stone-800 font-serif mb-4">C. Kontak</h3>
+                    <div className="bg-primary-50 p-4 rounded-xl border border-primary-100">
+                        <Input 
+                            label="No. HP Utama (WhatsApp)" 
+                            id="parentWaNumber" 
+                            name="parentWaNumber" 
+                            type="tel" 
+                            value={formData.parentWaNumber} 
+                            onChange={handleChange} 
+                            onBlur={handleBlur} 
+                            error={errors.parentWaNumber} 
+                            placeholder="081234567890" 
+                            required 
+                            inputMode="tel" 
+                        />
+                        <p className="mt-2 text-[10px] text-primary-600 font-medium">*Nomor ini akan digunakan untuk informasi kelulusan & administrasi.</p>
+                    </div>
+                </div>
+
+                {/* --- SECTION F: DATA PERIODIK --- */}
+                <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
+                    <h3 className="text-lg font-bold text-stone-800 font-serif mb-4">F. Data Periodik</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <Input label="Tinggi Badan (cm)" id="height" name="height" type="text" inputMode="numeric" value={formData.height} onChange={handleChange} onBlur={handleBlur} error={errors.height} required placeholder="150" />
+                        <Input label="Berat Badan (kg)" id="weight" name="weight" type="text" inputMode="numeric" value={formData.weight} onChange={handleChange} onBlur={handleBlur} error={errors.weight} required placeholder="45" />
+                        <Input label="Jml Saudara Kandung" id="siblingCount" name="siblingCount" type="text" inputMode="numeric" value={formData.siblingCount} onChange={handleChange} onBlur={handleBlur} error={errors.siblingCount} required placeholder="2" />
+                        <Input label="Anak Ke-" id="childOrder" name="childOrder" type="text" inputMode="numeric" value={formData.childOrder} onChange={handleChange} onBlur={handleBlur} error={errors.childOrder} required placeholder="1" />
                     </div>
                 </div>
             </div>
