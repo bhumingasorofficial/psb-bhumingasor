@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel } from './types';
 import { validateStep } from './utils/validation';
@@ -284,8 +283,8 @@ const App: React.FC = () => {
     }, [formData]);
 
     // NEW HELPER: Better Scroll to Error
-    const scrollToError = (errorKey: string) => {
-        const element = document.getElementById(errorKey);
+    const scrollToError = (errorKey: string | number | symbol) => {
+        const element = document.getElementById(String(errorKey));
         if (element) {
             // Calculate offset to avoid being hidden by sticky headers or floating buttons
             // Default browser scrollIntoView center is sometimes too low on mobile
