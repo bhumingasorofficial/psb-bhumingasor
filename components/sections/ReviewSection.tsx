@@ -15,26 +15,18 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
 
     // Initialize Turnstile
     useEffect(() => {
-        // Site Key Produksi dari Cloudflare (UPDATED)
-        const siteKey = '0x4AAAAAACU2RCccspWW1RvL';
-
+        // Use Cloudflare Testing Site Key: 1x00000000000000000000AA
+        // Use Dummy Secret for backend if needed: 1x0000000000000000000000000000000AA
         if (turnstileRef.current && (window as any).turnstile) {
-            // Bersihkan elemen sebelum render ulang untuk mencegah duplikasi
-            turnstileRef.current.innerHTML = '';
-            
-            try {
-                (window as any).turnstile.render(turnstileRef.current, {
-                    sitekey: siteKey, 
-                    callback: function(token: string) {
-                        setTurnstileToken(token);
-                    },
-                    'expired-callback': function() {
-                        setTurnstileToken('');
-                    },
-                });
-            } catch (e) {
-                console.error("Turnstile render error:", e);
-            }
+            (window as any).turnstile.render(turnstileRef.current, {
+                sitekey: '1x00000000000000000000AA', 
+                callback: function(token: string) {
+                    setTurnstileToken(token);
+                },
+                'expired-callback': function() {
+                    setTurnstileToken('');
+                },
+            });
         }
     }, [setTurnstileToken]);
 
