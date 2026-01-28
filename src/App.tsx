@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel, ParentEducation, ParentIncome } from './types';
 import { validateStep } from './utils/validation';
@@ -324,9 +325,8 @@ const App: React.FC = () => {
         if (!result.success) {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
-            // Explicitly cast to string to fix TS error: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string'
-            const firstError = Object.keys(errors)[0] as string;
-            if (firstError) scrollToError(firstError);
+            const firstError = Object.keys(errors)[0];
+            if (firstError) scrollToError(String(firstError));
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -433,9 +433,8 @@ const App: React.FC = () => {
         setErrors(validationErrors);
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
-             // Explicitly cast to string to fix TS error: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string'
-             const firstError = Object.keys(validationErrors)[0] as string;
-             if (firstError) scrollToError(firstError);
+             const firstError = Object.keys(validationErrors)[0];
+             if (firstError) scrollToError(String(firstError));
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }
