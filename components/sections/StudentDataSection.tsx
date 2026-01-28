@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { FormData, FormErrors, Gender, SchoolLevel } from '../../types';
 import Input from '../Input';
 import Select from '../Select';
@@ -11,16 +11,20 @@ interface Props {
     handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
 }
 
+// Interfaces for API Data
+interface Region {
+    id: string;
+    name: string;
+}
+
 const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, handleBlur }) => {
     
     // --- DROPDOWN DATE HELPERS ---
-    // Parsing existing YYYY-MM-DD
     const [year, month, day] = useMemo(() => {
         if (!formData.birthDate) return ['', '', ''];
         return formData.birthDate.split('-');
     }, [formData.birthDate]);
 
-    // Generate Arrays
     const dates = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
     const months = [
         { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' }, { value: '03', label: 'Maret' },
@@ -28,15 +32,13 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
         { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' }, { value: '09', label: 'September' },
         { value: '10', label: 'Oktober' }, { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
     ];
-    // Generate Years (Example: 2005 - 2018 for SMP/SMK age range)
     const currentYear = new Date().getFullYear();
-    const startYear = currentYear - 20; // Approx 2004
-    const endYear = currentYear - 8;   // Approx 2016
+    const startYear = currentYear - 20; 
+    const endYear = currentYear - 8;
     const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => String(startYear + i));
 
-    // Handler for specific date parts
     const handleDatePartChange = (part: 'year' | 'month' | 'day', value: string) => {
-        let newYear = year || '2012'; // Default fallback
+        let newYear = year || '2012';
         let newMonth = month || '01';
         let newDay = day || '01';
 
@@ -44,10 +46,8 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
         if (part === 'month') newMonth = value;
         if (part === 'day') newDay = value;
 
-        // Reconstruct YYYY-MM-DD
         const newDateString = `${newYear}-${newMonth}-${newDay}`;
         
-        // Mock Event for parent handler
         handleChange({
             target: {
                 name: 'birthDate',
@@ -55,6 +55,107 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                 type: 'date'
             }
         } as any);
+    };
+
+    // --- REGION API LOGIC ---
+    const [provinces, setProvinces] = useState<Region[]>([]);
+    const [cities, setCities] = useState<Region[]>([]);
+    const [districts, setDistricts] = useState<Region[]>([]);
+    const [villages, setVillages] = useState<Region[]>([]);
+
+    const [loadingProv, setLoadingProv] = useState(false);
+    const [loadingCity, setLoadingCity] = useState(false);
+    const [loadingDist, setLoadingDist] = useState(false);
+    const [loadingVill, setLoadingVill] = useState(false);
+
+    // Initial Fetch Provinces
+    useEffect(() => {
+        const fetchProvinces = async () => {
+            setLoadingProv(true);
+            try {
+                const response = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json');
+                const data = await response.json();
+                setProvinces(data);
+            } catch (error) {
+                console.error("Gagal mengambil data provinsi", error);
+            } finally {
+                setLoadingProv(false);
+            }
+        };
+        fetchProvinces();
+    }, []);
+
+    // Helper to manually trigger change in parent Form
+    const updateField = (name: string, value: string) => {
+        handleChange({
+            target: { name, value, type: 'text' }
+        } as any);
+    };
+
+    // HANDLE PROVINCE CHANGE
+    const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedName = e.target.value;
+        updateField('province', selectedName);
+        
+        // Reset Child Fields
+        updateField('city', '');
+        updateField('district', '');
+        updateField('village', '');
+        setCities([]);
+        setDistricts([]);
+        setVillages([]);
+
+        const selectedProv = provinces.find(p => p.name === selectedName);
+        if (selectedProv) {
+            setLoadingCity(true);
+            try {
+                const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProv.id}.json`);
+                const data = await res.json();
+                setCities(data);
+            } finally { setLoadingCity(false); }
+        }
+    };
+
+    // HANDLE CITY CHANGE
+    const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedName = e.target.value;
+        updateField('city', selectedName);
+
+        // Reset Child Fields
+        updateField('district', '');
+        updateField('village', '');
+        setDistricts([]);
+        setVillages([]);
+
+        const selectedCity = cities.find(c => c.name === selectedName);
+        if (selectedCity) {
+            setLoadingDist(true);
+            try {
+                const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${selectedCity.id}.json`);
+                const data = await res.json();
+                setDistricts(data);
+            } finally { setLoadingDist(false); }
+        }
+    };
+
+    // HANDLE DISTRICT CHANGE
+    const handleDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedName = e.target.value;
+        updateField('district', selectedName);
+
+        // Reset Child Fields
+        updateField('village', '');
+        setVillages([]);
+
+        const selectedDist = districts.find(d => d.name === selectedName);
+        if (selectedDist) {
+            setLoadingVill(true);
+            try {
+                const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${selectedDist.id}.json`);
+                const data = await res.json();
+                setVillages(data);
+            } finally { setLoadingVill(false); }
+        }
     };
 
     return (
@@ -192,22 +293,91 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                     <Input label="Asal Sekolah (SD/MI/SMP/MTs)" id="previousSchool" name="previousSchool" type="text" value={formData.previousSchool} onChange={handleChange} onBlur={handleBlur} error={errors.previousSchool} required placeholder="Nama sekolah sebelumnya" />
                 </div>
                 
-                {/* ALAMAT DIPECAH */}
+                {/* ALAMAT API WILAYAH */}
                 <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
-                    <h4 className="text-sm font-bold text-stone-700 mb-4">Alamat Tempat Tinggal</h4>
+                    <h4 className="text-sm font-bold text-stone-700 mb-4">Alamat Tempat Tinggal (Sesuai KK)</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-6 gap-x-6 gap-y-4">
+                        
                         <div className="sm:col-span-3">
-                             <Input label="Provinsi" id="province" name="province" type="text" value={formData.province} onChange={handleChange} onBlur={handleBlur} error={errors.province} required placeholder="Jawa Timur" />
-                        </div>
-                        <div className="sm:col-span-3">
-                             <Input label="Kabupaten / Kota" id="city" name="city" type="text" value={formData.city} onChange={handleChange} onBlur={handleBlur} error={errors.city} required placeholder="Surabaya" />
+                            <Select 
+                                label="Provinsi" 
+                                id="province" 
+                                name="province" 
+                                value={formData.province} 
+                                onChange={handleProvinceChange}
+                                onBlur={handleBlur}
+                                error={errors.province} 
+                                required
+                            >
+                                <option value="">Pilih Provinsi</option>
+                                {loadingProv && <option disabled>Memuat Data...</option>}
+                                {provinces.map(p => (
+                                    <option key={p.id} value={p.name}>{p.name}</option>
+                                ))}
+                            </Select>
                         </div>
                         
                         <div className="sm:col-span-3">
-                             <Input label="Kecamatan" id="district" name="district" type="text" value={formData.district} onChange={handleChange} onBlur={handleBlur} error={errors.district} required placeholder="Tegalsari" />
+                            <Select 
+                                label="Kabupaten / Kota" 
+                                id="city" 
+                                name="city" 
+                                value={formData.city} 
+                                onChange={handleCityChange}
+                                onBlur={handleBlur}
+                                error={errors.city} 
+                                required
+                                disabled={!formData.province || cities.length === 0}
+                            >
+                                <option value="">Pilih Kab/Kota</option>
+                                {loadingCity && <option disabled>Memuat Data...</option>}
+                                {!formData.province && <option disabled>Pilih Provinsi Terlebih Dahulu</option>}
+                                {cities.map(c => (
+                                    <option key={c.id} value={c.name}>{c.name}</option>
+                                ))}
+                            </Select>
                         </div>
+                        
                         <div className="sm:col-span-3">
-                             <Input label="Desa / Kelurahan" id="village" name="village" type="text" value={formData.village} onChange={handleChange} onBlur={handleBlur} error={errors.village} required placeholder="Mawar Indah" />
+                             <Select 
+                                label="Kecamatan" 
+                                id="district" 
+                                name="district" 
+                                value={formData.district} 
+                                onChange={handleDistrictChange}
+                                onBlur={handleBlur}
+                                error={errors.district} 
+                                required
+                                disabled={!formData.city || districts.length === 0}
+                            >
+                                <option value="">Pilih Kecamatan</option>
+                                {loadingDist && <option disabled>Memuat Data...</option>}
+                                {!formData.city && <option disabled>Pilih Kab/Kota Terlebih Dahulu</option>}
+                                {districts.map(d => (
+                                    <option key={d.id} value={d.name}>{d.name}</option>
+                                ))}
+                            </Select>
+                        </div>
+                        
+                        <div className="sm:col-span-3">
+                             <Select 
+                                label="Desa / Kelurahan" 
+                                id="village" 
+                                name="village" 
+                                value={formData.village} 
+                                onChange={(e) => updateField('village', e.target.value)}
+                                onBlur={handleBlur}
+                                error={errors.village} 
+                                required
+                                disabled={!formData.district || villages.length === 0}
+                            >
+                                <option value="">Pilih Desa/Kelurahan</option>
+                                {loadingVill && <option disabled>Memuat Data...</option>}
+                                {!formData.district && <option disabled>Pilih Kecamatan Terlebih Dahulu</option>}
+                                {villages.map(v => (
+                                    <option key={v.id} value={v.name}>{v.name}</option>
+                                ))}
+                            </Select>
                         </div>
 
                         {/* Detail Jalan */}
