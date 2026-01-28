@@ -1,6 +1,6 @@
 
 /**
- * BACKEND VERSI LENGKAP (DAFTAR + UPDATE STATUS + UPDATE DATA)
+ * BACKEND VERSI LENGKAP (DAFTAR + UPDATE STATUS + UPDATE DATA + CHECK NIK)
  * ID Spreadsheet: 1YJAjnHFP9wnAvSh1LJ53M0nxKTvHDt9j9jWLYAcm1Zs
  * ID Folder: 1gOAPJ1v6eUiWdK0_MuNTrqotHNtJaPyU
  */
@@ -20,6 +20,31 @@ function doPost(e) {
     var data = JSON.parse(rawData);
     var ss = SpreadsheetApp.openById("1YJAjnHFP9wnAvSh1LJ53M0nxKTvHDt9j9jWLYAcm1Zs");
     var sheet = ss.getSheets()[0];
+
+    // --- BAGIAN 0: CHECK DUPLIKAT NIK (NEW) ---
+    // Digunakan untuk validasi di frontend sebelum submit
+    if (data.action === "CHECK_NIK") {
+        var allData = sheet.getDataRange().getValues();
+        var nikFound = false;
+        var existingName = "";
+        
+        // Loop data (Skip Header)
+        // NIK ada di Kolom Index 5 (Kolom F) -> Ingat 0-based index
+        for (var i = 1; i < allData.length; i++) {
+            // Kita bersihkan tanda kutip (') jika ada
+            var storedNik = String(allData[i][5]).replace(/'/g, "").trim(); 
+            if (storedNik === String(data.nik).trim()) {
+                nikFound = true;
+                existingName = allData[i][4]; // Nama ada di Index 4
+                break;
+            }
+        }
+        
+        return ContentService.createTextOutput(JSON.stringify({ 
+            result: nikFound ? "exists" : "available", 
+            message: nikFound ? "NIK sudah terdaftar atas nama " + existingName : "NIK tersedia"
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
 
     // --- BAGIAN 1: UPDATE STATUS (Verifikasi/Reject) ---
     // Indeks Kolom telah bergeser +1 karena penambahan NIK di rowData

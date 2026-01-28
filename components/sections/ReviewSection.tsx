@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FormData, FormErrors } from '../../types';
 
 interface Props {
@@ -7,9 +7,29 @@ interface Props {
     errors: FormErrors;
     handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onEditStep: (step: number) => void;
+    setTurnstileToken: (token: string) => void; // New Prop
 }
 
-const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEditStep }) => {
+const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEditStep, setTurnstileToken }) => {
+    const turnstileRef = useRef<HTMLDivElement>(null);
+
+    // Initialize Turnstile
+    useEffect(() => {
+        // Use Cloudflare Testing Site Key: 1x00000000000000000000AA
+        // Use Dummy Secret for backend if needed: 1x0000000000000000000000000000000AA
+        if (turnstileRef.current && (window as any).turnstile) {
+            (window as any).turnstile.render(turnstileRef.current, {
+                sitekey: '1x00000000000000000000AA', 
+                callback: function(token: string) {
+                    setTurnstileToken(token);
+                },
+                'expired-callback': function() {
+                    setTurnstileToken('');
+                },
+            });
+        }
+    }, [setTurnstileToken]);
+
     const DataRow = ({ label, value }: { label: string, value: string }) => (
         <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-stone-100 last:border-0 gap-1 sm:gap-0">
             <span className="text-[10px] sm:text-[11px] font-bold text-stone-400 uppercase tracking-wider">{label}</span>
@@ -162,6 +182,11 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                                 {errors.termsAgreed && <p className="mt-2 text-[10px] font-bold text-red-600 uppercase tracking-wider">{errors.termsAgreed}</p>}
                             </div>
                         </label>
+                    </div>
+
+                    {/* TURNSTILE WIDGET CONTAINER */}
+                    <div className="flex justify-center">
+                        <div ref={turnstileRef} className="min-h-[65px]"></div>
                     </div>
                 </div>
             </div>

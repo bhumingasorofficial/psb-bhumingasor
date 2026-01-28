@@ -13,33 +13,29 @@ interface Props {
 const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, handleFileClear }) => {
     const [copied, setCopied] = useState(false);
 
+    // MOBILE TABS STATE
+    const [activeTab, setActiveTab] = useState(1);
+
     // LOGIKA GELOMBANG OTOMATIS
-    const currentMonth = new Date().getMonth(); // 0 = Jan, 1 = Feb, ...
-    
-    // Tentukan Gelombang Aktif
-    // Gel 1: Jan (0), Feb (1), Mar (2)
-    // Gel 2: Apr (3), Mei (4)
-    // Gel 3: Jun (5), Jul (6)
-    // Default ke 1 jika diluar bulan tersebut (misal testing di Des)
+    const currentMonth = new Date().getMonth(); // 0 = Jan
     let activeWave = 1; 
     if (currentMonth >= 0 && currentMonth <= 2) activeWave = 1;
     else if (currentMonth >= 3 && currentMonth <= 4) activeWave = 2;
     else if (currentMonth >= 5 && currentMonth <= 6) activeWave = 3;
     
-    // Helper function untuk style kolom
+    // Set default active tab to current wave
+    React.useEffect(() => {
+        setActiveTab(activeWave);
+    }, [activeWave]);
+
+    // Helper Styles
     const getColumnStyle = (wave: number) => {
-        const isActive = wave === activeWave;
-        if (isActive) {
-            return "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500 ring-inset ring-opacity-50 relative z-10";
-        }
+        if (wave === activeWave) return "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500 ring-inset ring-opacity-50 relative z-10";
         return "bg-stone-50 text-stone-400 opacity-60 grayscale-[0.5]";
     };
 
     const getHeaderStyle = (wave: number) => {
-        const isActive = wave === activeWave;
-        if (isActive) {
-            return "bg-emerald-600 text-white shadow-md relative overflow-hidden";
-        }
+        if (wave === activeWave) return "bg-emerald-600 text-white shadow-md relative overflow-hidden";
         return "bg-stone-100 text-stone-500";
     };
 
@@ -55,6 +51,18 @@ const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, h
         setTimeout(() => setCopied(false), 2000);
     };
 
+    // Data Biaya
+    const costData = {
+        items: [
+            { name: "Pendaftaran", gel1: "150.000", gel2: "250.000", gel3: "350.000" },
+            { name: "Almari", gel1: "350.000", gel2: "350.000", gel3: "350.000" },
+            { name: "Kitab", gel1: "200.000", gel2: "200.000", gel3: "200.000" },
+            { name: "Seragam", gel1: "300.000", gel2: "300.000", gel3: "300.000" },
+            { name: "Administrasi", gel1: "50.000", gel2: "50.000", gel3: "50.000" },
+        ],
+        totals: { gel1: "1.050.000", gel2: "1.150.000", gel3: "1.250.000" }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
              <div className="flex items-center gap-4 border-b border-stone-200 pb-4">
@@ -67,93 +75,101 @@ const PaymentSection: React.FC<Props> = ({ formData, errors, handleFileChange, h
                 </div>
             </div>
 
-            {/* Tabel Rincian Biaya */}
-            <div className="overflow-hidden rounded-xl border border-stone-200 shadow-sm relative">
+            {/* --- DESKTOP VIEW (TABLE) --- */}
+            <div className="hidden sm:block overflow-hidden rounded-xl border border-stone-200 shadow-sm relative">
                 <div className="bg-emerald-800 px-4 py-3 text-white text-center">
-                    <h4 className="font-bold text-lg uppercase tracking-wider">BIAYA PENDAFTARAN SANTRI BARU</h4>
+                    <h4 className="font-bold text-lg uppercase tracking-wider">RINCIAN BIAYA PENDAFTARAN</h4>
                 </div>
                 <div className="overflow-x-auto pb-2">
                     <table className="w-full text-sm text-left border-collapse">
                         <thead className="text-xs border-b border-stone-200">
                             <tr>
-                                <th className="px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap bg-stone-50 text-stone-700 font-bold w-1/4">
-                                    RINCIAN BIAYA
-                                </th>
-                                <th className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap transition-all ${getHeaderStyle(1)} w-1/4`}>
-                                    {activeWave === 1 && <ActiveBadge />}
-                                    <div className={activeWave === 1 ? "mt-2" : ""}>
-                                        <span className="font-bold text-sm block">GELOMBANG 1</span>
-                                        <span className="text-[10px] font-normal block opacity-90 mt-0.5">Januari - Maret</span>
-                                    </div>
-                                </th>
-                                <th className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap transition-all ${getHeaderStyle(2)} w-1/4`}>
-                                    {activeWave === 2 && <ActiveBadge />}
-                                    <div className={activeWave === 2 ? "mt-2" : ""}>
-                                        <span className="font-bold text-sm block">GELOMBANG 2</span>
-                                        <span className="text-[10px] font-normal block opacity-90 mt-0.5">April - Mei</span>
-                                    </div>
-                                </th>
-                                <th className={`px-4 py-4 text-center whitespace-nowrap transition-all ${getHeaderStyle(3)} w-1/4`}>
-                                    {activeWave === 3 && <ActiveBadge />}
-                                    <div className={activeWave === 3 ? "mt-2" : ""}>
-                                        <span className="font-bold text-sm block">GELOMBANG 3</span>
-                                        <span className="text-[10px] font-normal block opacity-90 mt-0.5">Juni - Juli</span>
-                                    </div>
-                                </th>
+                                <th className="px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap bg-stone-50 text-stone-700 font-bold w-1/4">RINCIAN BIAYA</th>
+                                {[1, 2, 3].map(wave => (
+                                    <th key={wave} className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap transition-all ${getHeaderStyle(wave)} w-1/4`}>
+                                        {activeWave === wave && <ActiveBadge />}
+                                        <div className={activeWave === wave ? "mt-2" : ""}>
+                                            <span className="font-bold text-sm block">GELOMBANG {wave}</span>
+                                            <span className="text-[10px] font-normal block opacity-90 mt-0.5">
+                                                {wave === 1 ? 'Januari - Maret' : wave === 2 ? 'April - Mei' : 'Juni - Juli'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-200 text-stone-800 font-medium">
-                            {/* Baris Pendaftaran */}
-                            <tr>
-                                <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Pendaftaran</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 150.000</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 250.000</td>
-                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 350.000</td>
-                            </tr>
-                            {/* Baris Almari */}
-                            <tr>
-                                <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Almari</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 350.000</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 350.000</td>
-                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 350.000</td>
-                            </tr>
-                            {/* Baris Kitab */}
-                            <tr>
-                                <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Kitab</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 200.000</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 200.000</td>
-                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 200.000</td>
-                            </tr>
-                            {/* Baris Seragam */}
-                            <tr>
-                                <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Seragam</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 300.000</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 300.000</td>
-                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 300.000</td>
-                            </tr>
-                            {/* Baris Administrasi SMP/SMK (NEW) */}
-                            <tr>
-                                <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">Administrasi SMP/SMK</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. 50.000</td>
-                                <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. 50.000</td>
-                                <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. 50.000</td>
-                            </tr>
-                            {/* TOTAL ROW (UPDATED) */}
+                            {costData.items.map((item, idx) => (
+                                <tr key={idx}>
+                                    <td className="px-4 py-3 font-bold bg-stone-50 border-r border-stone-200 whitespace-nowrap">{item.name}</td>
+                                    <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(1)}`}>Rp. {item.gel1}</td>
+                                    <td className={`px-4 py-3 text-center border-r border-stone-200 whitespace-nowrap ${getColumnStyle(2)}`}>Rp. {item.gel2}</td>
+                                    <td className={`px-4 py-3 text-center whitespace-nowrap ${getColumnStyle(3)}`}>Rp. {item.gel3}</td>
+                                </tr>
+                            ))}
                             <tr className="border-t-2 border-stone-300">
                                 <td className="px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap bg-stone-800 text-white font-bold">TOTAL</td>
-                                <td className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap font-black text-lg ${activeWave === 1 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. 1.050.000</td>
-                                <td className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap font-black text-lg ${activeWave === 2 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. 1.150.000</td>
-                                <td className={`px-4 py-4 text-center whitespace-nowrap font-black text-lg ${activeWave === 3 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. 1.250.000</td>
+                                <td className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap font-black text-lg ${activeWave === 1 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. {costData.totals.gel1}</td>
+                                <td className={`px-4 py-4 text-center border-r border-stone-200 whitespace-nowrap font-black text-lg ${activeWave === 2 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. {costData.totals.gel2}</td>
+                                <td className={`px-4 py-4 text-center whitespace-nowrap font-black text-lg ${activeWave === 3 ? 'bg-emerald-100 text-emerald-800 scale-105 shadow-inner' : 'bg-stone-100 text-stone-400'}`}>Rp. {costData.totals.gel3}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-stone-50 p-4 border-t border-stone-200 flex flex-col sm:flex-row justify-between items-center gap-2">
-                    <span className="text-xs uppercase tracking-widest font-bold text-stone-500">Biaya Lainnya</span>
-                    <div className="flex items-center gap-2">
-                         <span className="font-serif italic text-stone-600 text-sm">Uang Makan / Bulan :</span>
-                         <span className="text-lg font-bold text-stone-800 bg-white px-3 py-1 rounded border border-stone-200 shadow-sm">Rp. 400.000</span>
+            </div>
+
+            {/* --- MOBILE VIEW (TABS + CARDS) --- */}
+            <div className="block sm:hidden">
+                {/* Tabs */}
+                <div className="flex bg-stone-100 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
+                    {[1, 2, 3].map(wave => (
+                        <button
+                            key={wave}
+                            onClick={() => setActiveTab(wave)}
+                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg whitespace-nowrap transition-all duration-300 relative ${
+                                activeTab === wave 
+                                ? 'bg-white text-emerald-700 shadow-sm border border-emerald-100' 
+                                : 'text-stone-400 hover:text-stone-600'
+                            }`}
+                        >
+                            Gelombang {wave}
+                            {activeWave === wave && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Card Content for Active Tab */}
+                <div className="bg-white rounded-2xl border-2 border-emerald-500 shadow-sm overflow-hidden relative">
+                    <div className="bg-emerald-500 text-white px-5 py-4 text-center">
+                         <h4 className="font-black text-xl uppercase tracking-widest">GELOMBANG {activeTab}</h4>
+                         <p className="text-xs opacity-90 mt-1 font-medium">
+                            {activeTab === 1 ? 'Januari - Maret' : activeTab === 2 ? 'April - Mei' : 'Juni - Juli'}
+                         </p>
                     </div>
+
+                    <div className="p-5 space-y-3">
+                        {costData.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center border-b border-dashed border-stone-200 pb-2 last:border-0 last:pb-0">
+                                <span className="text-stone-600 font-bold text-sm">{item.name}</span>
+                                <span className="text-stone-800 font-bold">
+                                    Rp. {activeTab === 1 ? item.gel1 : activeTab === 2 ? item.gel2 : item.gel3}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-stone-900 text-white p-5 flex justify-between items-center">
+                        <span className="text-xs font-bold uppercase tracking-widest text-stone-400">TOTAL BIAYA</span>
+                        <span className="text-2xl font-black text-emerald-400">
+                             Rp. {activeTab === 1 ? costData.totals.gel1 : activeTab === 2 ? costData.totals.gel2 : costData.totals.gel3}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Uang Makan Mobile */}
+                 <div className="bg-stone-50 p-4 border border-stone-200 rounded-xl mt-4 flex justify-between items-center">
+                    <span className="text-xs uppercase tracking-widest font-bold text-stone-500">Uang Makan / Bln</span>
+                    <span className="text-base font-bold text-stone-800 bg-white px-3 py-1 rounded border border-stone-200">Rp. 400.000</span>
                 </div>
             </div>
 

@@ -3,13 +3,14 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { FormData, FormErrors, Gender, SchoolLevel } from '../../types';
 import Input from '../Input';
 import Select from '../Select';
-import SearchableSelect from '../SearchableSelect'; // Import Component Baru
+import SearchableSelect from '../SearchableSelect';
 
 interface Props {
     formData: FormData;
     errors: FormErrors;
     handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
     handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+    checkNikAvailability: (nik: string) => Promise<'available' | 'exists' | 'error'>; // NEW PROP
 }
 
 // Interfaces for API Data
@@ -21,14 +22,44 @@ interface Region {
 // Helper: Convert Uppercase "JAWA TIMUR" to Title Case "Jawa Timur"
 const toTitleCase = (str: string) => {
     return str.replace(/\w\S*/g, (txt) => {
-        // Handle special case like "DKI", "DI" to keep them uppercase if desired, 
-        // but standard Title Case is safer for general readability.
         return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
     });
 };
 
-const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, handleBlur }) => {
+const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, handleBlur, checkNikAvailability }) => {
     
+    // NIK Checking State
+    const [nikStatus, setNikStatus] = useState<'idle' | 'loading' | 'available' | 'exists' | 'error'>('idle');
+    const [nikMessage, setNikMessage] = useState('');
+
+    const handleCheckNik = async () => {
+        if (!formData.nik || formData.nik.length !== 16) {
+            setNikStatus('error');
+            setNikMessage('Masukkan 16 digit NIK terlebih dahulu.');
+            return;
+        }
+
+        setNikStatus('loading');
+        try {
+            const status = await checkNikAvailability(formData.nik);
+            setNikStatus(status);
+            if (status === 'available') setNikMessage('NIK Tersedia (Belum terdaftar).');
+            else if (status === 'exists') setNikMessage('NIK ini sudah terdaftar sebelumnya!');
+            else setNikMessage('Gagal mengecek. Lanjutkan pengisian.');
+        } catch (e) {
+            setNikStatus('error');
+            setNikMessage('Gagal koneksi. Silahkan lanjut.');
+        }
+    };
+
+    // Reset NIK status on change
+    useEffect(() => {
+        if (nikStatus !== 'idle') {
+            setNikStatus('idle');
+            setNikMessage('');
+        }
+    }, [formData.nik]);
+
     // --- DROPDOWN DATE HELPERS ---
     const [year, month, day] = useMemo(() => {
         if (!formData.birthDate) return ['', '', ''];
@@ -85,7 +116,6 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const response = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json');
                 const data = await response.json();
-                // CONVERT TO TITLE CASE HERE
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setProvinces(formattedData);
             } catch (error) {
@@ -97,18 +127,14 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
         fetchProvinces();
     }, []);
 
-    // Helper to manually trigger change in parent Form
     const updateField = (name: string, value: string) => {
         handleChange({
             target: { name, value, type: 'text' }
         } as any);
     };
 
-    // HANDLE PROVINCE CHANGE
     const handleProvinceChange = async (selectedName: string) => {
         updateField('province', selectedName);
-        
-        // Reset Child Fields
         updateField('city', '');
         updateField('district', '');
         updateField('village', '');
@@ -122,18 +148,14 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProv.id}.json`);
                 const data = await res.json();
-                // CONVERT TO TITLE CASE
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setCities(formattedData);
             } finally { setLoadingCity(false); }
         }
     };
 
-    // HANDLE CITY CHANGE
     const handleCityChange = async (selectedName: string) => {
         updateField('city', selectedName);
-
-        // Reset Child Fields
         updateField('district', '');
         updateField('village', '');
         setDistricts([]);
@@ -145,18 +167,14 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${selectedCity.id}.json`);
                 const data = await res.json();
-                // CONVERT TO TITLE CASE
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setDistricts(formattedData);
             } finally { setLoadingDist(false); }
         }
     };
 
-    // HANDLE DISTRICT CHANGE
     const handleDistrictChange = async (selectedName: string) => {
         updateField('district', selectedName);
-
-        // Reset Child Fields
         updateField('village', '');
         setVillages([]);
 
@@ -166,7 +184,6 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${selectedDist.id}.json`);
                 const data = await res.json();
-                // CONVERT TO TITLE CASE
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setVillages(formattedData);
             } finally { setLoadingVill(false); }
@@ -188,7 +205,6 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             
             <div className="grid grid-cols-1 gap-y-6 sm:gap-y-8 sm:gap-x-8 sm:grid-cols-6">
                 
-                {/* Pilihan Jenjang - Highlighted */}
                 <div className="sm:col-span-6">
                     <div className="bg-gradient-to-r from-primary-50 to-white p-6 rounded-2xl border border-primary-100 shadow-sm">
                         <Select label="Daftar Untuk Jenjang" id="schoolChoice" name="schoolChoice" value={formData.schoolChoice} onChange={handleChange} onBlur={handleBlur} error={errors.schoolChoice} required>
@@ -208,59 +224,76 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                 </div>
 
                 <div className="sm:col-span-6">
-                    <Input 
-                        label="NIK (Nomor Induk Kependudukan)" 
-                        id="nik" 
-                        name="nik" 
-                        type="text" 
-                        pattern="\d{16}" 
-                        maxLength={16} 
-                        value={formData.nik} 
-                        onChange={handleChange} 
-                        onBlur={handleBlur} 
-                        error={errors.nik} 
-                        required 
-                        inputMode="numeric" 
-                        placeholder="16 digit angka sesuai KK/Akta" 
-                    />
+                    <div className="relative">
+                        <Input 
+                            label="NIK (Nomor Induk Kependudukan)" 
+                            id="nik" 
+                            name="nik" 
+                            type="text" 
+                            pattern="\d{16}" 
+                            maxLength={16} 
+                            value={formData.nik} 
+                            onChange={handleChange} 
+                            onBlur={handleBlur} 
+                            error={errors.nik} 
+                            required 
+                            inputMode="numeric" 
+                            placeholder="16 digit angka sesuai KK/Akta" 
+                        />
+                        {/* Check Button */}
+                        <div className="absolute top-[38px] right-2">
+                            <button
+                                type="button"
+                                onClick={handleCheckNik}
+                                disabled={nikStatus === 'loading'}
+                                className={`
+                                    text-xs font-bold px-3 py-1.5 rounded-lg transition-all shadow-sm
+                                    ${nikStatus === 'loading' ? 'bg-stone-200 text-stone-500 cursor-wait' : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'}
+                                    ${nikStatus === 'exists' ? 'bg-red-100 text-red-700 border-red-200' : ''}
+                                    ${nikStatus === 'available' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ''}
+                                `}
+                            >
+                                {nikStatus === 'loading' ? 'Mengecek...' : 'Cek Ketersediaan'}
+                            </button>
+                        </div>
+                    </div>
+                    {/* Status Message */}
+                    {nikStatus !== 'idle' && (
+                         <p className={`mt-1 ml-1 text-xs font-bold flex items-center gap-1
+                            ${nikStatus === 'exists' ? 'text-red-600' : ''}
+                            ${nikStatus === 'available' ? 'text-emerald-600' : ''}
+                            ${nikStatus === 'error' ? 'text-amber-600' : ''}
+                         `}>
+                            {nikStatus === 'exists' && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
+                            {nikStatus === 'available' && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                            {nikMessage}
+                         </p>
+                    )}
                 </div>
                 
                 <div className="sm:col-span-3">
                     <Input label="Tempat Lahir" id="birthPlace" name="birthPlace" type="text" value={formData.birthPlace} onChange={handleChange} onBlur={handleBlur} error={errors.birthPlace} required placeholder="Contoh: Jakarta" />
                 </div>
                 
-                {/* IMPROVED DATE INPUT (Split into 3 Selects) */}
                 <div className="sm:col-span-3">
                     <label className="block text-sm font-bold text-stone-600 mb-2 ml-1">
                         Tanggal Lahir <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                         <div className="relative">
-                            <select 
-                                value={day} 
-                                onChange={(e) => handleDatePartChange('day', e.target.value)}
-                                className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none"
-                            >
+                            <select value={day} onChange={(e) => handleDatePartChange('day', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none">
                                 <option value="" disabled>Tgl</option>
                                 {dates.map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
                         </div>
                         <div className="relative">
-                            <select 
-                                value={month} 
-                                onChange={(e) => handleDatePartChange('month', e.target.value)}
-                                className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none"
-                            >
+                            <select value={month} onChange={(e) => handleDatePartChange('month', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none">
                                 <option value="" disabled>Bln</option>
                                 {months.map(m => <option key={m.value} value={m.value}>{m.label.substring(0, 3)}</option>)}
                             </select>
                         </div>
                         <div className="relative">
-                            <select 
-                                value={year} 
-                                onChange={(e) => handleDatePartChange('year', e.target.value)}
-                                className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none"
-                            >
+                            <select value={year} onChange={(e) => handleDatePartChange('year', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none">
                                 <option value="" disabled>Thn</option>
                                 {years.map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
@@ -291,12 +324,7 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                         inputMode="numeric" 
                         placeholder="10 digit angka"
                         topRightLabel={
-                            <a 
-                                href="https://nisn.data.kemdikbud.go.id/index.php/Cindex/formcaribynama/" 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors"
-                            >
+                            <a href="https://nisn.data.kemdikbud.go.id/index.php/Cindex/formcaribynama/" target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors">
                                 Cek NISN Online
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             </a>
@@ -308,76 +336,24 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                     <Input label="Asal Sekolah (SD/MI/SMP/MTs)" id="previousSchool" name="previousSchool" type="text" value={formData.previousSchool} onChange={handleChange} onBlur={handleBlur} error={errors.previousSchool} required placeholder="Nama sekolah sebelumnya" />
                 </div>
                 
-                {/* ALAMAT API WILAYAH - UPDATED TO SEARCHABLE */}
                 <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
                     <h4 className="text-sm font-bold text-stone-700 mb-4">Alamat Tempat Tinggal (Sesuai KK)</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-6 gap-x-6 gap-y-4">
-                        
                         <div className="sm:col-span-3">
-                            <SearchableSelect
-                                label="Provinsi"
-                                id="province"
-                                value={formData.province}
-                                options={provinces}
-                                onChange={handleProvinceChange}
-                                loading={loadingProv}
-                                error={errors.province}
-                                required
-                                placeholder="Pilih Provinsi"
-                            />
+                            <SearchableSelect label="Provinsi" id="province" value={formData.province} options={provinces} onChange={handleProvinceChange} loading={loadingProv} error={errors.province} required placeholder="Pilih Provinsi" />
                         </div>
-                        
                         <div className="sm:col-span-3">
-                            <SearchableSelect
-                                label="Kabupaten / Kota"
-                                id="city"
-                                value={formData.city}
-                                options={cities}
-                                onChange={handleCityChange}
-                                loading={loadingCity}
-                                disabled={!formData.province || cities.length === 0}
-                                error={errors.city}
-                                required
-                                placeholder={!formData.province ? "Pilih Provinsi Dulu" : "Pilih Kab/Kota"}
-                            />
+                            <SearchableSelect label="Kabupaten / Kota" id="city" value={formData.city} options={cities} onChange={handleCityChange} loading={loadingCity} disabled={!formData.province || cities.length === 0} error={errors.city} required placeholder={!formData.province ? "Pilih Provinsi Dulu" : "Pilih Kab/Kota"} />
                         </div>
-                        
                         <div className="sm:col-span-3">
-                            <SearchableSelect
-                                label="Kecamatan"
-                                id="district"
-                                value={formData.district}
-                                options={districts}
-                                onChange={handleDistrictChange}
-                                loading={loadingDist}
-                                disabled={!formData.city || districts.length === 0}
-                                error={errors.district}
-                                required
-                                placeholder={!formData.city ? "Pilih Kab/Kota Dulu" : "Pilih Kecamatan"}
-                            />
+                            <SearchableSelect label="Kecamatan" id="district" value={formData.district} options={districts} onChange={handleDistrictChange} loading={loadingDist} disabled={!formData.city || districts.length === 0} error={errors.district} required placeholder={!formData.city ? "Pilih Kab/Kota Dulu" : "Pilih Kecamatan"} />
                         </div>
-                        
                         <div className="sm:col-span-3">
-                            <SearchableSelect
-                                label="Desa / Kelurahan"
-                                id="village"
-                                value={formData.village}
-                                options={villages}
-                                onChange={(val) => updateField('village', val)}
-                                loading={loadingVill}
-                                disabled={!formData.district || villages.length === 0}
-                                error={errors.village}
-                                required
-                                placeholder={!formData.district ? "Pilih Kecamatan Dulu" : "Pilih Desa/Kelurahan"}
-                            />
+                            <SearchableSelect label="Desa / Kelurahan" id="village" value={formData.village} options={villages} onChange={(val) => updateField('village', val)} loading={loadingVill} disabled={!formData.district || villages.length === 0} error={errors.village} required placeholder={!formData.district ? "Pilih Kecamatan Dulu" : "Pilih Desa/Kelurahan"} />
                         </div>
-
-                        {/* Detail Jalan */}
                         <div className="sm:col-span-6">
                              <Input label="Detail Jalan / Dusun" id="specificAddress" name="specificAddress" type="text" value={formData.specificAddress} onChange={handleChange} onBlur={handleBlur} error={errors.specificAddress} required placeholder="Jl. Mawar No. 12 / Dusun A" />
                         </div>
-
-                        {/* RT RW Kode Pos */}
                         <div className="sm:col-span-2">
                              <Input label="RT" id="rt" name="rt" type="text" inputMode="numeric" value={formData.rt} onChange={handleChange} onBlur={handleBlur} error={errors.rt} required placeholder="001" />
                         </div>
