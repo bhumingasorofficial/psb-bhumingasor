@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel, ParentEducation, ParentIncome } from './types';
 import { validateStep } from './utils/validation';
@@ -344,7 +343,7 @@ const App: React.FC = () => {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
             const firstError = Object.keys(errors)[0];
-            if (firstError) scrollToError(String(firstError));
+            if (firstError) scrollToError(firstError as string);
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -475,7 +474,7 @@ const App: React.FC = () => {
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
              const firstError = Object.keys(validationErrors)[0];
-             if (firstError) scrollToError(String(firstError));
+             if (firstError) scrollToError(firstError as string);
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }

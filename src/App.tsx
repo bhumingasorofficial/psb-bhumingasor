@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { FormData, formSchema, baseFormSchema, FormErrors, Gender, ParentOccupation, SchoolLevel, ParentEducation, ParentIncome } from './types';
 import { validateStep } from './utils/validation';
@@ -326,7 +325,7 @@ const App: React.FC = () => {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
             const firstError = Object.keys(errors)[0];
-            if (firstError) scrollToError(String(firstError));
+            if (firstError) scrollToError(firstError as string);
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -434,7 +433,7 @@ const App: React.FC = () => {
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
              const firstError = Object.keys(validationErrors)[0];
-             if (firstError) scrollToError(String(firstError));
+             if (firstError) scrollToError(firstError as string);
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }
@@ -686,8 +685,13 @@ const App: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center py-6 sm:py-12 px-3 sm:px-4 no-print">
             <Toast toasts={toasts} removeToast={removeToast} />
-            {/* ... (Loading & Draft Indicators) ... */}
-            
+            <div className={`fixed top-4 right-4 z-50 transition-all duration-300 ${isSaving ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+                <div className="bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-500 px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                    Menyimpan...
+                </div>
+            </div>
+
             {loadingStatus && (
                 <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
                     <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-6"></div>
@@ -695,7 +699,13 @@ const App: React.FC = () => {
                     <p className="text-xs text-slate-400 mt-2">Mohon jangan tutup halaman ini</p>
                 </div>
             )}
-            
+
+            {isDraftLoaded && (
+                <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-amber-100 text-amber-800 px-6 py-2 rounded-full shadow-sm text-xs font-bold flex items-center gap-2 animate-fade-up border border-amber-200">
+                    <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span> Draft Loaded
+                </div>
+            )}
+
             <FloatingHelp />
             <BrandHeader />
 
