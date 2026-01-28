@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { FormData, FormErrors, Gender, SchoolLevel } from '../../types';
 import Input from '../Input';
 import Select from '../Select';
+import SearchableSelect from '../SearchableSelect'; // Import Component Baru
 
 interface Props {
     formData: FormData;
@@ -16,6 +17,15 @@ interface Region {
     id: string;
     name: string;
 }
+
+// Helper: Convert Uppercase "JAWA TIMUR" to Title Case "Jawa Timur"
+const toTitleCase = (str: string) => {
+    return str.replace(/\w\S*/g, (txt) => {
+        // Handle special case like "DKI", "DI" to keep them uppercase if desired, 
+        // but standard Title Case is safer for general readability.
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+};
 
 const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, handleBlur }) => {
     
@@ -75,7 +85,9 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const response = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json');
                 const data = await response.json();
-                setProvinces(data);
+                // CONVERT TO TITLE CASE HERE
+                const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
+                setProvinces(formattedData);
             } catch (error) {
                 console.error("Gagal mengambil data provinsi", error);
             } finally {
@@ -93,8 +105,7 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
     };
 
     // HANDLE PROVINCE CHANGE
-    const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedName = e.target.value;
+    const handleProvinceChange = async (selectedName: string) => {
         updateField('province', selectedName);
         
         // Reset Child Fields
@@ -111,14 +122,15 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProv.id}.json`);
                 const data = await res.json();
-                setCities(data);
+                // CONVERT TO TITLE CASE
+                const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
+                setCities(formattedData);
             } finally { setLoadingCity(false); }
         }
     };
 
     // HANDLE CITY CHANGE
-    const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedName = e.target.value;
+    const handleCityChange = async (selectedName: string) => {
         updateField('city', selectedName);
 
         // Reset Child Fields
@@ -133,14 +145,15 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${selectedCity.id}.json`);
                 const data = await res.json();
-                setDistricts(data);
+                // CONVERT TO TITLE CASE
+                const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
+                setDistricts(formattedData);
             } finally { setLoadingDist(false); }
         }
     };
 
     // HANDLE DISTRICT CHANGE
-    const handleDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedName = e.target.value;
+    const handleDistrictChange = async (selectedName: string) => {
         updateField('district', selectedName);
 
         // Reset Child Fields
@@ -153,7 +166,9 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${selectedDist.id}.json`);
                 const data = await res.json();
-                setVillages(data);
+                // CONVERT TO TITLE CASE
+                const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
+                setVillages(formattedData);
             } finally { setLoadingVill(false); }
         }
     };
@@ -293,91 +308,68 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                     <Input label="Asal Sekolah (SD/MI/SMP/MTs)" id="previousSchool" name="previousSchool" type="text" value={formData.previousSchool} onChange={handleChange} onBlur={handleBlur} error={errors.previousSchool} required placeholder="Nama sekolah sebelumnya" />
                 </div>
                 
-                {/* ALAMAT API WILAYAH */}
+                {/* ALAMAT API WILAYAH - UPDATED TO SEARCHABLE */}
                 <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
                     <h4 className="text-sm font-bold text-stone-700 mb-4">Alamat Tempat Tinggal (Sesuai KK)</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-6 gap-x-6 gap-y-4">
                         
                         <div className="sm:col-span-3">
-                            <Select 
-                                label="Provinsi" 
-                                id="province" 
-                                name="province" 
-                                value={formData.province} 
+                            <SearchableSelect
+                                label="Provinsi"
+                                id="province"
+                                value={formData.province}
+                                options={provinces}
                                 onChange={handleProvinceChange}
-                                onBlur={handleBlur}
-                                error={errors.province} 
+                                loading={loadingProv}
+                                error={errors.province}
                                 required
-                            >
-                                <option value="">Pilih Provinsi</option>
-                                {loadingProv && <option disabled>Memuat Data...</option>}
-                                {provinces.map(p => (
-                                    <option key={p.id} value={p.name}>{p.name}</option>
-                                ))}
-                            </Select>
+                                placeholder="Pilih Provinsi"
+                            />
                         </div>
                         
                         <div className="sm:col-span-3">
-                            <Select 
-                                label="Kabupaten / Kota" 
-                                id="city" 
-                                name="city" 
-                                value={formData.city} 
+                            <SearchableSelect
+                                label="Kabupaten / Kota"
+                                id="city"
+                                value={formData.city}
+                                options={cities}
                                 onChange={handleCityChange}
-                                onBlur={handleBlur}
-                                error={errors.city} 
-                                required
+                                loading={loadingCity}
                                 disabled={!formData.province || cities.length === 0}
-                            >
-                                <option value="">Pilih Kab/Kota</option>
-                                {loadingCity && <option disabled>Memuat Data...</option>}
-                                {!formData.province && <option disabled>Pilih Provinsi Terlebih Dahulu</option>}
-                                {cities.map(c => (
-                                    <option key={c.id} value={c.name}>{c.name}</option>
-                                ))}
-                            </Select>
+                                error={errors.city}
+                                required
+                                placeholder={!formData.province ? "Pilih Provinsi Dulu" : "Pilih Kab/Kota"}
+                            />
                         </div>
                         
                         <div className="sm:col-span-3">
-                             <Select 
-                                label="Kecamatan" 
-                                id="district" 
-                                name="district" 
-                                value={formData.district} 
+                            <SearchableSelect
+                                label="Kecamatan"
+                                id="district"
+                                value={formData.district}
+                                options={districts}
                                 onChange={handleDistrictChange}
-                                onBlur={handleBlur}
-                                error={errors.district} 
-                                required
+                                loading={loadingDist}
                                 disabled={!formData.city || districts.length === 0}
-                            >
-                                <option value="">Pilih Kecamatan</option>
-                                {loadingDist && <option disabled>Memuat Data...</option>}
-                                {!formData.city && <option disabled>Pilih Kab/Kota Terlebih Dahulu</option>}
-                                {districts.map(d => (
-                                    <option key={d.id} value={d.name}>{d.name}</option>
-                                ))}
-                            </Select>
+                                error={errors.district}
+                                required
+                                placeholder={!formData.city ? "Pilih Kab/Kota Dulu" : "Pilih Kecamatan"}
+                            />
                         </div>
                         
                         <div className="sm:col-span-3">
-                             <Select 
-                                label="Desa / Kelurahan" 
-                                id="village" 
-                                name="village" 
-                                value={formData.village} 
-                                onChange={(e) => updateField('village', e.target.value)}
-                                onBlur={handleBlur}
-                                error={errors.village} 
-                                required
+                            <SearchableSelect
+                                label="Desa / Kelurahan"
+                                id="village"
+                                value={formData.village}
+                                options={villages}
+                                onChange={(val) => updateField('village', val)}
+                                loading={loadingVill}
                                 disabled={!formData.district || villages.length === 0}
-                            >
-                                <option value="">Pilih Desa/Kelurahan</option>
-                                {loadingVill && <option disabled>Memuat Data...</option>}
-                                {!formData.district && <option disabled>Pilih Kecamatan Terlebih Dahulu</option>}
-                                {villages.map(v => (
-                                    <option key={v.id} value={v.name}>{v.name}</option>
-                                ))}
-                            </Select>
+                                error={errors.village}
+                                required
+                                placeholder={!formData.district ? "Pilih Kecamatan Dulu" : "Pilih Desa/Kelurahan"}
+                            />
                         </div>
 
                         {/* Detail Jalan */}
