@@ -324,8 +324,9 @@ const App: React.FC = () => {
         if (!result.success) {
             const errors = result.error.flatten().fieldErrors;
             setErrors(errors as FormErrors);
-            const firstError = Object.keys(errors)[0];
-            if (firstError) scrollToError(String(firstError));
+            // Explicitly cast to string to fix TS error: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string'
+            const firstError = Object.keys(errors)[0] as string;
+            if (firstError) scrollToError(firstError);
             addToast('warning', 'Data Belum Lengkap', 'Mohon lengkapi data yang ditandai merah.');
             return;
         }
@@ -432,8 +433,9 @@ const App: React.FC = () => {
         setErrors(validationErrors);
         if (success) { setCurrentStep(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); } 
         else {
-             const firstError = Object.keys(validationErrors)[0];
-             if (firstError) scrollToError(String(firstError));
+             // Explicitly cast to string to fix TS error: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string'
+             const firstError = Object.keys(validationErrors)[0] as string;
+             if (firstError) scrollToError(firstError);
              if (currentStep === 1 && !formData.infoSource.length) window.scrollTo({ top: 0, behavior: 'smooth' }); 
              addToast('warning', 'Periksa Kembali', 'Terdapat isian yang belum lengkap.');
         }
@@ -591,4 +593,160 @@ const App: React.FC = () => {
                         {/* --- NEW: Mandatory Next Steps Instructions --- */}
                         <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4 text-left">
                             <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.6
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                Langkah Selanjutnya
+                            </h4>
+                            <ul className="list-disc pl-4 space-y-1 text-xs text-amber-900/80 font-medium">
+                                <li>Simpan bukti pendaftaran ini (Screenshot / Cetak PDF).</li>
+                                <li>Hubungi Admin via WhatsApp untuk konfirmasi pembayaran & data.</li>
+                                <li>Bawa bukti ini saat daftar ulang di pesantren.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- PRINT VIEW --- */}
+                <div className="print-only bg-white p-8 text-black w-full max-w-[210mm] mx-auto min-h-screen relative box-border">
+                    {/* (Reuse the same print layout from above) */}
+                    <div className="flex items-center justify-between border-b-[3px] border-emerald-800 pb-4 mb-6 relative">
+                         <div className="absolute -bottom-1.5 left-0 w-full h-[1.5px] bg-emerald-500"></div>
+                        <div className="w-24 h-24 flex-shrink-0 mr-4">
+                            <img src={LOGO_URL} alt="Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-1 text-center">
+                            <h3 className="text-lg font-bold uppercase tracking-widest text-emerald-900 font-serif mb-1">YAYASAN PONDOK PESANTREN</h3>
+                            <h1 className="text-3xl font-black uppercase mb-1 text-stone-900 font-serif tracking-tight leading-none scale-y-110">AN-NUR HIDAYATUS SALAM</h1>
+                            <h1 className="text-3xl font-black uppercase mb-3 text-emerald-700 font-serif tracking-[0.2em] leading-none">BHUMI NGASOR</h1>
+                            <p className="text-[10px] italic text-stone-600 font-medium leading-tight">
+                                Sekretariat: Jl. Pendhopo Kamulyan RT.02 RW.01 Dsn. Bakalan Kec. Bululawang Kab. Malang<br/>
+                                Email: <span className="text-emerald-700">bhumingasorofficial@gmail.com</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="text-center mb-6">
+                        <h3 className="text-xl font-black text-stone-900 underline decoration-2 decoration-emerald-500 underline-offset-4 mb-1 uppercase tracking-wider">TANDA BUKTI PENDAFTARAN</h3>
+                        <p className="text-xs font-bold text-stone-500 uppercase tracking-[0.3em]">TAHUN AJARAN 2026/2027</p>
+                    </div>
+
+                    <div className="border-l-4 border-emerald-500 bg-emerald-50/50 rounded-r-lg p-4 mb-6 flex justify-between items-center shadow-sm">
+                        <div>
+                            <p className="text-[10px] uppercase font-extrabold text-emerald-800 mb-0.5 tracking-wider">NOMOR REGISTRASI:</p>
+                            <p className="text-3xl font-mono font-black tracking-widest text-stone-900 leading-none">{registrationId}</p>
+                        </div>
+                        <div className="text-right">
+                             <p className="text-[10px] uppercase font-extrabold text-emerald-800 mb-0.5 tracking-wider">TANGGAL DAFTAR:</p>
+                             <p className="text-lg font-bold text-stone-800 leading-none">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}</p>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <table className="w-full text-xs">
+                            <tbody>
+                                <PrintRow label="JENJANG PENDIDIKAN" value={formData.schoolChoice + (formData.schoolChoice === SchoolLevel.SMK ? ` (${formData.smkMajor})` : '')} />
+                                <PrintRow label="NAMA LENGKAP" value={formData.fullName} />
+                                <PrintRow label="NISN" value={formData.nisn} />
+                                <PrintRow label="TEMPAT, TGL LAHIR" value={`${formData.birthPlace}, ${formData.birthDate}`} />
+                                <PrintRow label="JENIS KELAMIN" value={formData.gender} />
+                                <PrintRow 
+                                    label="ALAMAT LENGKAP" 
+                                    value={`${formData.specificAddress}, RT ${formData.rt} / RW ${formData.rw}, ${formData.village}, ${formData.district}, ${formData.city}, ${formData.province}, ${formData.postalCode}`} 
+                                />
+                                <PrintRow label="NAMA ORANG TUA" value={`${formData.fatherName} / ${formData.motherName}`} />
+                                <PrintRow label="NO. WHATSAPP" value={formData.parentWaNumber} />
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="bg-amber-50 p-3 border-l-4 border-amber-400 text-[10px] mb-8 rounded-r-lg">
+                        <strong className="text-amber-900 uppercase tracking-wide block mb-1">CATATAN PENTING:</strong>
+                        <ul className="list-disc pl-4 space-y-0.5 text-stone-700 font-medium">
+                            <li>Kartu ini adalah bukti sah pendaftaran santri baru Pondok Pesantren Bhumi Ngasor.</li>
+                            <li>Harap simpan kartu ini dan dibawa saat melakukan daftar ulang atau tes masuk.</li>
+                        </ul>
+                    </div>
+
+                    <div className="flex justify-between items-end px-4 mt-auto">
+                        <div className="text-center w-48">
+                            <p className="mb-16 text-xs font-bold text-stone-600">Panitia PSB,</p>
+                            <div className="border-b border-stone-800 w-full mb-1"></div>
+                            <p className="text-[10px] text-stone-400 font-bold">( Tanda Tangan & Stempel )</p>
+                        </div>
+                        <div className="text-center w-48">
+                            <p className="mb-16 text-xs font-bold text-stone-600">Orang Tua / Wali,</p>
+                            <p className="text-sm font-bold text-stone-900 border-b border-stone-800 uppercase pb-1 mb-1">
+                                ( {formData.fatherName} )
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 font-sans flex flex-col items-center py-6 sm:py-12 px-3 sm:px-4 no-print">
+            <Toast toasts={toasts} removeToast={removeToast} />
+            {/* ... (Loading & Draft Indicators) ... */}
+            
+            {loadingStatus && (
+                <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-6"></div>
+                    <p className="font-bold tracking-widest text-emerald-800 animate-pulse text-sm uppercase">{loadingStatus}</p>
+                    <p className="text-xs text-slate-400 mt-2">Mohon jangan tutup halaman ini</p>
+                </div>
+            )}
+            
+            <FloatingHelp />
+            <BrandHeader />
+
+            <div className="w-full max-w-4xl bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] p-5 sm:p-12 relative">
+                <div className="mb-8 sm:mb-14">
+                    <Stepper steps={STEPS} currentStep={currentStep} />
+                </div>
+                
+                <form onSubmit={handleSubmit}>
+                    <div className="opacity-0 absolute h-0 w-0 overflow-hidden"><input type="text" name="botField" value={formData.botField} onChange={handleChange} tabIndex={-1} autoComplete="off" /></div>
+                    
+                    <div className="min-h-[300px]">
+                        {currentStep === 1 && <SurveySection formData={formData} errors={errors} onSelectionChange={handleSurveyChange} />}
+                        {currentStep === 2 && <StudentDataSection formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} checkNikAvailability={checkNikAvailability} />}
+                        {currentStep === 3 && <ParentDataSection formData={formData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} />}
+                        {currentStep === 4 && <DocumentUploadSection formData={formData} errors={errors} handleFileChange={handleFileChange} handleFileClear={handleFileClear} />}
+                        {currentStep === 5 && <PaymentSection formData={formData} errors={errors} handleFileChange={handleFileChange} handleFileClear={handleFileClear} />}
+                        {currentStep === 6 && <ReviewSection formData={formData} errors={errors} handleChange={handleChange} onEditStep={jumpToStep} setTurnstileToken={setTurnstileToken} />}
+                    </div>
+
+                    <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-between gap-4">
+                        {currentStep > 1 ? (
+                            <button 
+                                type="button" 
+                                onClick={() => { setCurrentStep(p => p - 1); window.scrollTo({top:0, behavior:'smooth'}); }} 
+                                className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all text-sm"
+                            >
+                                Kembali
+                            </button>
+                        ) : (
+                            <div className="hidden sm:block"></div> 
+                        )}
+                        
+                        <button 
+                            type="submit" 
+                            disabled={!!loadingStatus || (currentStep === 6 && !formData.termsAgreed)} 
+                            className="w-full sm:w-auto px-10 py-4 rounded-xl bg-emerald-600 text-white font-bold shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                        >
+                            {currentStep < 6 ? 'Langkah Selanjutnya' : 'Kirim Formulir'}
+                            {currentStep < 6 && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div className="mt-8 sm:mt-12 text-center text-slate-400 text-[10px] font-bold tracking-widest uppercase">
+                © 2026 PONDOK PESANTREN BHUMI NGASOR
+            </div>
+        </div>
+    );
+};
+
+export default App;

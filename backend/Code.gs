@@ -49,8 +49,7 @@ function doPost(e) {
         var nikFound = false;
         var existingName = "";
         
-        // NIK kini ada di Kolom 8 (Index 7) karena ada tambahan Jurusan & Data Periodik
-        // Tapi kita akan cari berdasarkan loop aman
+        // NIK kini ada di Kolom 8 (Index 7) karena ada tambahan Jurusan
         // Struktur Baru (perkiraan):
         // 0: Time, 1: ID, 2: Info, 3: School, 4: Major, 5: Nama, 6: Gender, 7: NIK, 8: NISN...
         
@@ -68,10 +67,6 @@ function doPost(e) {
             message: nikFound ? "NIK sudah terdaftar atas nama " + existingName : "NIK tersedia"
         })).setMimeType(ContentService.MimeType.JSON);
     }
-
-    // --- BAGIAN 1 & 2: UPDATE STATUS / DATA (LOGIC SEDERHANA BY REG ID) ---
-    // Update logic removed for brevity as focus is on new registration structure
-    // If needed, simply loop column 1 (Reg ID) and update relative cells.
 
     // --- BAGIAN 3: PENDAFTARAN BARU ---
     
@@ -93,29 +88,34 @@ function doPost(e) {
     }
 
     // UPDATE ROW DATA STRUCTURE 2026/2027
+    // Menyesuaikan dengan format yang diminta user
     var rowData = [
       new Date(),                     // 0. Timestamp
       data.regId,                     // 1. ID
       data.infoSource,                // 2. Info
       data.schoolChoice,              // 3. Sekolah
       data.smkMajor || '-',           // 4. Jurusan (New)
+      
+      // A. Identitas
       data.fullName,                  // 5. Nama
       data.gender,                    // 6. JK
       "'" + data.nik,                 // 7. NIK
       "'" + data.nisn,                // 8. NISN
       data.birthPlace,                // 9. Tempat Lahir
       "'" + data.birthDate,           // 10. Tgl Lahir
+      
+      // B. Alamat & C. Kontak
       data.address,                   // 11. Alamat Lengkap
       data.previousSchool,            // 12. Asal Sekolah
-      
-      // Data Periodik (New)
-      "'" + data.height,              // 13
-      "'" + data.weight,              // 14
-      "'" + data.siblingCount,        // 15
-      "'" + data.childOrder,          // 16
-      
-      "'" + data.parentWaNumber,      // 17. WA Utama
+      "'" + data.parentWaNumber,      // 13. WA Utama
 
+      // F. Data Periodik (New)
+      "'" + data.height,              // 14
+      "'" + data.weight,              // 15
+      "'" + data.siblingCount,        // 16
+      "'" + data.childOrder,          // 17
+      
+      // E. Orang Tua
       // Ayah
       data.fatherName,                // 18
       data.fatherEducation,           // 19 (New)

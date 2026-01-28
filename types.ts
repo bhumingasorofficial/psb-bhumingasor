@@ -79,9 +79,9 @@ export const baseFormSchema = z.object({
     // Step 1: Survey
     infoSource: z.array(z.string()).min(1, 'Mohon pilih setidaknya satu sumber informasi.'),
 
-    // Step 2: Student Data
+    // Step 2: Student Data (A, B, C, F)
     schoolChoice: z.nativeEnum(SchoolLevel),
-    smkMajor: z.string().optional(), // Validasi manual nanti
+    smkMajor: z.string().optional(), 
     
     // A. Identitas
     fullName: z.string().min(1, 'Nama lengkap wajib diisi'),
@@ -129,7 +129,7 @@ export const baseFormSchema = z.object({
     // Wali (Opsional flag)
     hasGuardian: z.boolean(),
     guardianName: z.string().optional(),
-    guardianEducation: z.string().optional(), // Pakai string optional agar bisa kosong jika hasGuardian false
+    guardianEducation: z.string().optional(), 
     guardianOccupation: z.string().optional(),
     guardianOccupationOther: z.string().optional(),
     guardianIncome: z.string().optional(),

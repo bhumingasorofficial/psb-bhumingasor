@@ -15,7 +15,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
 
     // Initialize Turnstile
     useEffect(() => {
-        // Site Key Produksi dari Cloudflare (UPDATED)
+        // Site Key Produksi dari Cloudflare
         const siteKey = '0x4AAAAAACU2RCccspWW1RvL';
 
         if (turnstileRef.current && (window as any).turnstile) {

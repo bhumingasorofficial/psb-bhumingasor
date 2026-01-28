@@ -2,26 +2,19 @@
 import { formSchema, FormData, FormErrors } from '../types';
 
 // Mapping fields to steps for partial validation
-// Step 1: Survey
-// Step 2: Student Identity, Address, Periodic Data
-// Step 3: Parents & Guardian
-// Step 4: Documents
-// Step 5: Payment
-// Step 6: Terms
-
 const STEP_FIELDS: Record<number, Extract<keyof FormData, string>[]> = {
     1: ['infoSource'],
     
-    // Step 2 includes Identitas, Alamat, Kontak, Data Periodik
+    // Step 2: Student Identity (A), Address (B), Contact (C), Periodic (F)
     2: [
         'schoolChoice', 'smkMajor', 
         'fullName', 'gender', 'nik', 'nisn', 'birthPlace', 'birthDate', 'previousSchool',
         'province', 'city', 'district', 'village', 'specificAddress', 'rt', 'rw', 'postalCode',
-        'parentWaNumber', // Kontak dipindah ke sini
-        'height', 'weight', 'siblingCount', 'childOrder'
+        'parentWaNumber', // C. Kontak
+        'height', 'weight', 'siblingCount', 'childOrder' // F. Data Periodik
     ],
     
-    // Step 3 includes Ayah, Ibu, Wali
+    // Step 3: Parents (E) & Guardian
     3: [
         'fatherName', 'fatherEducation', 'fatherOccupation', 'fatherOccupationOther', 'fatherIncome',
         'motherName', 'motherEducation', 'motherOccupation', 'motherOccupationOther', 'motherIncome',
