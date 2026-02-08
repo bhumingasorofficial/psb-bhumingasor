@@ -31,6 +31,9 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
     const [nikStatus, setNikStatus] = useState<'idle' | 'loading' | 'available' | 'exists' | 'error'>('idle');
     const [nikMessage, setNikMessage] = useState('');
 
+    // Determine if NISN should be hidden
+    const isNisnHidden = [SchoolLevel.MI, SchoolLevel.MONDOK].includes(formData.schoolChoice);
+
     const handleCheckNik = async () => {
         if (!formData.nik || formData.nik.length !== 16) {
             setNikStatus('error');
@@ -59,13 +62,21 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
         }
     }, [formData.nik]);
 
-    // --- DROPDOWN DATE HELPERS ---
+    // --- SMART DATE LOGIC ---
     const [year, month, day] = useMemo(() => {
         if (!formData.birthDate) return ['', '', ''];
-        return formData.birthDate.split('-');
+        const parts = formData.birthDate.split('-');
+        return [parts[0] || '', parts[1] || '', parts[2] || ''];
     }, [formData.birthDate]);
 
-    const dates = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+    // Generate Dates Dynamically
+    const daysInMonth = useMemo(() => {
+        if (!year || !month) return 31;
+        return new Date(parseInt(year), parseInt(month), 0).getDate();
+    }, [year, month]);
+
+    const dates = Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0'));
+    
     const months = [
         { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' }, { value: '03', label: 'Maret' },
         { value: '04', label: 'April' }, { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
@@ -74,17 +85,23 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
     ];
     const currentYear = new Date().getFullYear();
     const startYear = currentYear - 20; 
-    const endYear = currentYear - 8;
+    const endYear = currentYear - 5; // Adjusted to allow younger kids (MI)
     const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => String(startYear + i));
 
     const handleDatePartChange = (part: 'year' | 'month' | 'day', value: string) => {
-        let newYear = year || '2012';
+        let newYear = year || '2015'; // Default year adapted
         let newMonth = month || '01';
         let newDay = day || '01';
 
         if (part === 'year') newYear = value;
         if (part === 'month') newMonth = value;
         if (part === 'day') newDay = value;
+
+        // Auto-correct day if invalid for new month (e.g., 31 to 28)
+        const maxDays = new Date(parseInt(newYear), parseInt(newMonth), 0).getDate();
+        if (parseInt(newDay) > maxDays) {
+            newDay = String(maxDays).padStart(2, '0');
+        }
 
         const newDateString = `${newYear}-${newMonth}-${newDay}`;
         
@@ -97,11 +114,13 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
         } as any);
     };
 
-    // --- REGION API LOGIC ---
+    // --- REGION API LOGIC & FALLBACK ---
     const [provinces, setProvinces] = useState<Region[]>([]);
     const [cities, setCities] = useState<Region[]>([]);
     const [districts, setDistricts] = useState<Region[]>([]);
     const [villages, setVillages] = useState<Region[]>([]);
+    
+    const [apiError, setApiError] = useState(false); // New Fallback State
 
     const [loadingProv, setLoadingProv] = useState(false);
     const [loadingCity, setLoadingCity] = useState(false);
@@ -113,11 +132,14 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             setLoadingProv(true);
             try {
                 const response = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json');
+                if (!response.ok) throw new Error("API Error");
                 const data = await response.json();
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setProvinces(formattedData);
+                setApiError(false);
             } catch (error) {
-                console.error("Gagal mengambil data provinsi", error);
+                console.warn("Region API Failed, switching to manual input.");
+                setApiError(true);
             } finally {
                 setLoadingProv(false);
             }
@@ -145,10 +167,11 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             setLoadingCity(true);
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProv.id}.json`);
+                if (!res.ok) throw new Error("API Error");
                 const data = await res.json();
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setCities(formattedData);
-            } finally { setLoadingCity(false); }
+            } catch(e) { setApiError(true); } finally { setLoadingCity(false); }
         }
     };
 
@@ -164,10 +187,11 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             setLoadingDist(true);
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${selectedCity.id}.json`);
+                if (!res.ok) throw new Error("API Error");
                 const data = await res.json();
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setDistricts(formattedData);
-            } finally { setLoadingDist(false); }
+            } catch(e) { setApiError(true); } finally { setLoadingDist(false); }
         }
     };
 
@@ -181,15 +205,16 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
             setLoadingVill(true);
             try {
                 const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${selectedDist.id}.json`);
+                if (!res.ok) throw new Error("API Error");
                 const data = await res.json();
                 const formattedData = data.map((item: Region) => ({ ...item, name: toTitleCase(item.name) }));
                 setVillages(formattedData);
-            } finally { setLoadingVill(false); }
+            } catch(e) { setApiError(true); } finally { setLoadingVill(false); }
         }
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-fade-up">
             {/* Header */}
             <div className="flex items-start sm:items-center gap-4 border-b border-stone-200 pb-6">
                 <div className="w-12 h-12 rounded-2xl bg-primary-100 flex items-center justify-center text-primary-700 shrink-0 shadow-sm border border-primary-200">
@@ -213,11 +238,12 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                                 </Select>
                             </div>
                             {formData.schoolChoice === SchoolLevel.SMK && (
-                                <div className="animate-in fade-in slide-in-from-left-4">
-                                     <Select label="Pilih Jurusan SMK" id="smkMajor" name="smkMajor" value={formData.smkMajor} onChange={handleChange} onBlur={handleBlur} error={errors.smkMajor} required>
+                                <div className="animate-fade-up">
+                                     <Select label="Pilih Jurusan SMK" id="smkMajor" name="smkMajor" value={formData.smkMajor || ''} onChange={handleChange} onBlur={handleBlur} error={errors.smkMajor} required>
                                         <option value="" disabled>-- Pilih Jurusan --</option>
                                         <option value={SmkMajor.DKV}>{SmkMajor.DKV}</option>
                                         <option value={SmkMajor.TKR}>{SmkMajor.TKR}</option>
+                                        <option value={SmkMajor.AKUNTANSI}>{SmkMajor.AKUNTANSI}</option>
                                     </Select>
                                 </div>
                             )}
@@ -264,8 +290,20 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                         </div>
                     </div>
                     {/* Mobile Button Check */}
-                    <div className="mt-2 sm:hidden text-right">
-                         <button type="button" onClick={handleCheckNik} disabled={nikStatus === 'loading'} className="text-xs font-bold text-primary-700 underline">{nikStatus === 'loading' ? 'Sedang Mengecek...' : 'Cek Ketersediaan NIK'}</button>
+                    <div className="mt-2 sm:hidden">
+                         <button 
+                            type="button" 
+                            onClick={handleCheckNik} 
+                            disabled={nikStatus === 'loading'} 
+                            className={`w-full py-3 rounded-xl font-bold text-sm shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 ${nikStatus === 'loading' ? 'bg-stone-100 text-stone-400' : 'bg-white border border-primary-200 text-primary-700 hover:bg-primary-50'}`}
+                        >
+                            {nikStatus === 'loading' ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-stone-300 border-t-primary-600 rounded-full animate-spin"></div>
+                                    Sedang Mengecek...
+                                </>
+                            ) : 'Cek Ketersediaan NIK'}
+                        </button>
                     </div>
                     {nikStatus !== 'idle' && (
                          <p className={`mt-2 ml-1 text-xs font-bold flex items-center gap-1 ${nikStatus === 'exists' ? 'text-red-600' : ''} ${nikStatus === 'available' ? 'text-emerald-600' : ''} ${nikStatus === 'error' ? 'text-amber-600' : ''}`}>
@@ -274,30 +312,34 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                     )}
                 </div>
 
-                 <div className="sm:col-span-3">
-                    <Input 
-                        label="NISN" 
-                        id="nisn" 
-                        name="nisn" 
-                        type="text" 
-                        pattern="\d{10}" 
-                        maxLength={10} 
-                        value={formData.nisn} 
-                        onChange={handleChange} 
-                        onBlur={handleBlur} 
-                        error={errors.nisn} 
-                        required 
-                        inputMode="numeric" 
-                        placeholder="10 digit angka"
-                        topRightLabel={
-                            <a href="https://nisn.data.kemdikbud.go.id/index.php/Cindex/formcaribynama/" target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors">
-                                Cek NISN Online
-                            </a>
-                        }
-                    />
-                </div>
+                {/* NISN FIELD - CONDITIONAL RENDER */}
+                {!isNisnHidden && (
+                    <div className="sm:col-span-3 animate-fade-up">
+                        <Input 
+                            label="NISN" 
+                            id="nisn" 
+                            name="nisn" 
+                            type="text" 
+                            pattern="\d{10}" 
+                            maxLength={10} 
+                            value={formData.nisn || ''} 
+                            onChange={handleChange} 
+                            onBlur={handleBlur} 
+                            error={errors.nisn} 
+                            required 
+                            inputMode="numeric" 
+                            placeholder="10 digit angka"
+                            topRightLabel={
+                                <a href="https://nisn.data.kemdikbud.go.id/index.php/Cindex/formcaribynama/" target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 transition-colors">
+                                    Cek NISN Online
+                                </a>
+                            }
+                        />
+                    </div>
+                )}
                 
-                <div className="sm:col-span-3">
+                {/* Adjust column span if NISN is hidden to maintain layout balance, or just let auto-flow */}
+                <div className={`${isNisnHidden ? 'sm:col-span-6' : 'sm:col-span-3'}`}>
                     <Input label="Tempat Lahir" id="birthPlace" name="birthPlace" type="text" value={formData.birthPlace} onChange={handleChange} onBlur={handleBlur} error={errors.birthPlace} required placeholder="Contoh: Jakarta" />
                 </div>
                 
@@ -305,34 +347,67 @@ const StudentDataSection: React.FC<Props> = ({ formData, errors, handleChange, h
                     <label className="block text-sm font-bold text-stone-600 mb-2 ml-1">
                         Tanggal Lahir <span className="text-red-500">*</span>
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        <select value={day} onChange={(e) => handleDatePartChange('day', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none"><option value="" disabled>Tgl</option>{dates.map(d => <option key={d} value={d}>{d}</option>)}</select>
-                        <select value={month} onChange={(e) => handleDatePartChange('month', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none"><option value="" disabled>Bln</option>{months.map(m => <option key={m.value} value={m.value}>{m.label.substring(0, 3)}</option>)}</select>
-                        <select value={year} onChange={(e) => handleDatePartChange('year', e.target.value)} className="block w-full px-3 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none"><option value="" disabled>Thn</option>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                        <div className="relative">
+                            <select value={day || ''} onChange={(e) => handleDatePartChange('day', e.target.value)} className="block w-full px-2 sm:px-4 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 text-center"><option value="" disabled>Tgl</option>{dates.map(d => <option key={d} value={d}>{d}</option>)}</select>
+                        </div>
+                        <div className="relative">
+                            <select value={month || ''} onChange={(e) => handleDatePartChange('month', e.target.value)} className="block w-full px-2 sm:px-4 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 text-center"><option value="" disabled>Bln</option>{months.map(m => <option key={m.value} value={m.value}>{m.label.substring(0, 3)}</option>)}</select>
+                        </div>
+                        <div className="relative">
+                            <select value={year || ''} onChange={(e) => handleDatePartChange('year', e.target.value)} className="block w-full px-2 sm:px-4 py-3.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-800 font-medium appearance-none outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 text-center"><option value="" disabled>Thn</option>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                        </div>
                     </div>
                     {errors.birthDate && <p className="mt-2 text-xs font-semibold text-red-600 ml-1">{errors.birthDate}</p>}
                 </div>
 
                 <div className="sm:col-span-6">
-                    <Input label="Asal Sekolah (SD/MI/SMP/MTs)" id="previousSchool" name="previousSchool" type="text" value={formData.previousSchool} onChange={handleChange} onBlur={handleBlur} error={errors.previousSchool} required placeholder="Nama sekolah sebelumnya" />
+                    <Input label="Asal Sekolah (TK/SD/MI/SMP/MTs/SMA)" id="previousSchool" name="previousSchool" type="text" value={formData.previousSchool} onChange={handleChange} onBlur={handleBlur} error={errors.previousSchool} required placeholder="Nama sekolah sebelumnya" />
                 </div>
 
                  {/* --- SECTION B: ALAMAT --- */}
                 <div className="sm:col-span-6 border-t border-stone-200 pt-6 mt-2">
-                    <h3 className="text-lg font-bold text-stone-800 font-serif mb-4">B. Alamat Tempat Tinggal</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-stone-800 font-serif">B. Alamat Tempat Tinggal</h3>
+                        {apiError && (
+                             <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">Mode Manual</span>
+                        )}
+                    </div>
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-6 gap-x-6 gap-y-4">
-                        <div className="sm:col-span-3">
-                            <SearchableSelect label="Provinsi" id="province" value={formData.province} options={provinces} onChange={handleProvinceChange} loading={loadingProv} error={errors.province} required placeholder="Pilih Provinsi" />
-                        </div>
-                        <div className="sm:col-span-3">
-                            <SearchableSelect label="Kabupaten / Kota" id="city" value={formData.city} options={cities} onChange={handleCityChange} loading={loadingCity} disabled={!formData.province || cities.length === 0} error={errors.city} required placeholder={!formData.province ? "Pilih Provinsi Dulu" : "Pilih Kab/Kota"} />
-                        </div>
-                        <div className="sm:col-span-3">
-                            <SearchableSelect label="Kecamatan" id="district" value={formData.district} options={districts} onChange={handleDistrictChange} loading={loadingDist} disabled={!formData.city || districts.length === 0} error={errors.district} required placeholder={!formData.city ? "Pilih Kab/Kota Dulu" : "Pilih Kecamatan"} />
-                        </div>
-                        <div className="sm:col-span-3">
-                            <SearchableSelect label="Desa / Kelurahan" id="village" value={formData.village} options={villages} onChange={(val) => updateField('village', val)} loading={loadingVill} disabled={!formData.district || villages.length === 0} error={errors.village} required placeholder={!formData.district ? "Pilih Kecamatan Dulu" : "Pilih Desa/Kelurahan"} />
-                        </div>
+                        {/* Fallback to Manual Input if API Error */}
+                        {!apiError ? (
+                            <>
+                                <div className="sm:col-span-3">
+                                    <SearchableSelect label="Provinsi" id="province" value={formData.province} options={provinces} onChange={handleProvinceChange} loading={loadingProv} error={errors.province} required placeholder="Pilih Provinsi" />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <SearchableSelect label="Kabupaten / Kota" id="city" value={formData.city} options={cities} onChange={handleCityChange} loading={loadingCity} disabled={!formData.province || cities.length === 0} error={errors.city} required placeholder={!formData.province ? "Pilih Provinsi Dulu" : "Pilih Kab/Kota"} />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <SearchableSelect label="Kecamatan" id="district" value={formData.district} options={districts} onChange={handleDistrictChange} loading={loadingDist} disabled={!formData.city || districts.length === 0} error={errors.district} required placeholder={!formData.city ? "Pilih Kab/Kota Dulu" : "Pilih Kecamatan"} />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <SearchableSelect label="Desa / Kelurahan" id="village" value={formData.village} options={villages} onChange={(val) => updateField('village', val)} loading={loadingVill} disabled={!formData.district || villages.length === 0} error={errors.village} required placeholder={!formData.district ? "Pilih Kecamatan Dulu" : "Pilih Desa/Kelurahan"} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="sm:col-span-3">
+                                    <Input label="Provinsi" id="province" name="province" value={formData.province} onChange={handleChange} onBlur={handleBlur} error={errors.province} required />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <Input label="Kabupaten / Kota" id="city" name="city" value={formData.city} onChange={handleChange} onBlur={handleBlur} error={errors.city} required />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <Input label="Kecamatan" id="district" name="district" value={formData.district} onChange={handleChange} onBlur={handleBlur} error={errors.district} required />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <Input label="Desa / Kelurahan" id="village" name="village" value={formData.village} onChange={handleChange} onBlur={handleBlur} error={errors.village} required />
+                                </div>
+                            </>
+                        )}
+
                         <div className="sm:col-span-6">
                              <Input label="Jalan / Dusun / No. Rumah" id="specificAddress" name="specificAddress" type="text" value={formData.specificAddress} onChange={handleChange} onBlur={handleBlur} error={errors.specificAddress} required placeholder="Contoh: Jl. Merdeka No. 10" />
                         </div>

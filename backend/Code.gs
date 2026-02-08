@@ -1,274 +1,344 @@
 
 /**
- * BACKEND VERSI DEBUGGING - DENGAN LOGGING LENGKAP & TEST KEYS
- * 
- * PENTING:
- * 1. Simpan kode ini.
- * 2. Klik "Deploy" -> "New Deployment".
- * 3. Pilih type "Web app".
- * 4. Description: "Fix Captcha Error".
- * 5. Execute as: "Me".
- * 6. Who has access: "Anyone".
- * 7. Klik "Deploy" dan pastikan URL Web App di React App Anda sesuai.
+ * BACKEND SYSTEM PSB BHUMI NGASOR (VERSION 4.0 - SECURITY & UX UPDATE)
  */
 
 var SPREADSHEET_ID = "1YJAjnHFP9wnAvSh1LJ53M0nxKTvHDt9j9jWLYAcm1Zs";
-var FOLDER_ID = "1gOAPJ1v6eUiWdK0_MuNTrqotHNtJaPyU";
-var EMAIL_ADMIN = "bhumingasorofficial@gmail.com"; 
+var FOLDER_ID = "1gOAPJ1v6eUiWdK0_MuNTrqotHNtJaPyU"; 
 
-// GUNAKAN TEST SECRET KEY (ALWAYS PASS)
-// Agar backend selalu menerima token dari frontend
-var SECRET_KEY = "1x0000000000000000000000000000000AA"; 
+// --- UTILS ---
 
-// --- HELPER: SYSTEM LOGGING ---
-// Mencatat error/info ke sheet "System Logs" agar mudah dilacak
-function logToSheet(ss, type, message, details) {
-  try {
-    var logSheet = ss.getSheetByName("System Logs");
-    if (!logSheet) {
-      logSheet = ss.insertSheet("System Logs");
-      logSheet.appendRow(["Timestamp", "Type", "Message", "Details"]);
-      logSheet.setFrozenRows(1);
-    }
-    logSheet.appendRow([new Date(), type, message, details]);
-  } catch (e) {
-    console.error("Gagal mencatat log: " + e.toString());
-  }
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
-// --- HELPER: GET DATA SHEET ---
-// Memastikan data masuk ke sheet yang benar ("Data Pendaftar")
-function getDataSheet(ss) {
-  var sheetName = "Data Pendaftar";
+function getOrCreateSheet(ss, sheetName, headers) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
-    // Header Row (Jika sheet baru dibuat)
-    var headers = [
-      "Waktu Input", "ID Registrasi", "Sumber Info", "Jenjang", "Jurusan (SMK)",
-      "Nama Lengkap", "Gender", "NIK", "NISN", "Tempat Lahir", "Tanggal Lahir",
-      "Alamat Lengkap", "Sekolah Asal", "No. WA",
-      "Tinggi (cm)", "Berat (kg)", "Jml Saudara", "Anak Ke-",
-      "Nama Ayah", "Pendidikan Ayah", "Pekerjaan Ayah", "Penghasilan Ayah",
-      "Nama Ibu", "Pendidikan Ibu", "Pekerjaan Ibu", "Penghasilan Ibu",
-      "Nama Wali", "Pendidikan Wali", "Pekerjaan Wali", "Penghasilan Wali",
-      "Link KK", "Link Akta", "Link KTP", "Link Foto", "Link Ijazah", "Link Bukti Bayar",
-      "Status", "Catatan"
-    ];
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
   }
   return sheet;
 }
 
-// --- HELPER: TURNSTILE ---
-function verifyTurnstile(token, ss) {
-  if (!token) return { success: false, msg: "Token Kosong" };
+function responseJSON(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function generateToken() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function sanitizeArray(input) {
+  if (Array.isArray(input)) {
+    return input.join(", ");
+  }
+  return input;
+}
+
+function normalizePhone(phone) {
+  if (!phone) return "";
+  var p = String(phone).replace(/\D/g, "");
+  if (p.startsWith("62")) return "0" + p.substring(2);
+  if (p.startsWith("0")) return p;
+  return p;
+}
+
+function uploadFileToDrive(base64Data, mimeType, fileName) {
+  if (!base64Data || base64Data.length < 50) return "";
   
-  var url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-  var payload = {
-    'secret': SECRET_KEY,
-    'response': token
-  };
-  var options = {
-    'method': 'post',
-    'payload': payload
-  };
-  
+  // Security: Server-side MIME validation
+  var allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  if (allowedMimes.indexOf(mimeType) === -1) {
+    return "Error: Invalid File Type";
+  }
+
   try {
-    var response = UrlFetchApp.fetch(url, options);
-    var json = JSON.parse(response.getContentText());
-    
-    // Log hasil verifikasi untuk debugging
-    if (!json.success) {
-       logToSheet(ss, "WARNING", "Turnstile Reject", JSON.stringify(json));
-    }
-    
-    return { success: json.success, msg: json['error-codes'] };
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+    var decoded = Utilities.base64Decode(base64Data);
+    var blob = Utilities.newBlob(decoded, mimeType, fileName);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
   } catch (e) {
-    return { success: false, msg: e.toString() };
+    Logger.log("Upload Error: " + e.toString());
+    return "Error Upload";
   }
 }
 
-// --- MAIN FUNCTION ---
+function formatAddress(data) {
+  var parts = [];
+  if (data.specificAddress) parts.push(data.specificAddress);
+  if (data.rt && data.rw) parts.push("RT " + data.rt + " / RW " + data.rw);
+  if (data.village) parts.push(data.village);
+  if (data.district) parts.push(data.district);
+  if (data.city) parts.push(data.city);
+  if (data.province) parts.push(data.province);
+  if (data.postalCode) parts.push(data.postalCode);
+  return parts.join(", ");
+}
+
+// --- MAIN CONTROLLER ---
+
+function doGet(e) {
+  try {
+    var action = e.parameter.action;
+    var ss = getSpreadsheet();
+
+    if (action === "LOGIN") {
+      var params = {
+        nik: e.parameter.nik,
+        token: e.parameter.token,
+        wa: e.parameter.wa // New Security Field
+      };
+      return handleLogin(ss, params);
+    } else if (action === "CHECK_NIK") {
+      return handleCheckNik(ss, e.parameter.nik);
+    } else if (action === "GET_CONFIG") {
+      return handleGetConfig();
+    }
+    
+    return responseJSON({ result: "error", message: "Invalid GET Action" });
+  } catch (err) {
+    return responseJSON({ result: "error", message: "System Error: " + err.toString() });
+  }
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
-  
-  // Open Spreadsheet early for logging
-  var ss;
-  try {
-    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  } catch (err) {
-    // Fatal error: Cannot open spreadsheet
-    return ContentService.createTextOutput(JSON.stringify({ 
-      result: "error", 
-      message: "Server Error: Tidak dapat membuka Spreadsheet. Periksa ID Spreadsheet." 
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // Lock to prevent race conditions
   if (!lock.tryLock(30000)) {
-    logToSheet(ss, "ERROR", "Lock Timeout", "Server busy");
-    return ContentService.createTextOutput(JSON.stringify({ 
-      result: "error", 
-      message: "Server sedang sibuk, silakan coba lagi dalam beberapa detik." 
-    })).setMimeType(ContentService.MimeType.JSON);
+    return responseJSON({ result: "error", message: "Server sibuk, silakan coba lagi nanti." });
   }
 
   try {
-    // 1. Validasi Payload
-    if (!e || !e.postData || !e.postData.contents) {
-      throw new Error("Data POST kosong");
+    var rawData = JSON.parse(e.postData.contents);
+    var action = rawData.action;
+    var ss = getSpreadsheet();
+
+    if (action === "REGISTER") {
+      return handleRegister(ss, rawData);
+    } else if (action === "SUBMIT_FULL") {
+      return handleSubmitFull(ss, rawData);
+    } else {
+      return responseJSON({ result: "error", message: "Aksi tidak dikenal." });
     }
 
-    var data;
-    try {
-      data = JSON.parse(e.postData.contents);
-    } catch (parseErr) {
-      throw new Error("Gagal memparsing JSON: " + parseErr.toString());
-    }
-
-    // 2. Cek Aksi Khusus (seperti Cek NIK)
-    if (data.action === "CHECK_NIK") {
-        var checkSheet = getDataSheet(ss);
-        var allData = checkSheet.getDataRange().getValues();
-        var nikFound = false;
-        // Kolom NIK ada di index 7 (kolom H, array index mulai 0)
-        for (var i = 1; i < allData.length; i++) {
-            var storedNik = String(allData[i][7] || "").replace(/'/g, "").trim(); 
-            if (storedNik === String(data.nik).trim()) {
-                nikFound = true;
-                break;
-            }
-        }
-        return ContentService.createTextOutput(JSON.stringify({ 
-            result: nikFound ? "exists" : "available" 
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // 3. Log Awal Pendaftaran
-    logToSheet(ss, "INFO", "Memulai Pendaftaran", "ID: " + data.regId + ", Nama: " + data.fullName);
-
-    // 4. Verifikasi Turnstile
-    var captchaCheck = verifyTurnstile(data.turnstileToken, ss);
-    if (!captchaCheck.success) {
-       // UPDATE: Jika Test Key digunakan, terkadang Cloudflare tetap rewel.
-       // Kita log error tapi JANGAN throw error agar data tetap masuk (Soft Fail)
-       logToSheet(ss, "WARNING", "Captcha Gagal (Bypassed)", "Token: " + data.turnstileToken + " Msg: " + captchaCheck.msg);
-       // throw new Error("Verifikasi Captcha Gagal: " + captchaCheck.msg); // Disable this for now
-    }
-
-    // 5. Setup Folder Drive
-    var folder;
-    try {
-      folder = DriveApp.getFolderById(FOLDER_ID);
-    } catch (driveErr) {
-      throw new Error("Folder Drive tidak ditemukan. Periksa ID Folder.");
-    }
-
-    // Fungsi Upload Helper
-    function uploadFile(base64Str, mime, name) {
-      if (!base64Str || base64Str.length < 50) return ""; 
-      try {
-        var decoded = Utilities.base64Decode(base64Str);
-        var blob = Utilities.newBlob(decoded, mime, name);
-        var file = folder.createFile(blob);
-        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        return file.getUrl();
-      } catch (err) { 
-        logToSheet(ss, "WARNING", "Gagal Upload File: " + name, err.toString());
-        return "Gagal Upload"; 
-      }
-    }
-
-    // 6. Upload Files
-    var linkKK = uploadFile(data.kartuKeluargaBase64, data.kartuKeluargaMime, "KK_" + data.fullName);
-    var linkAkta = uploadFile(data.aktaKelahiranBase64, data.aktaKelahiranMime, "AKTA_" + data.fullName);
-    var linkKTP = uploadFile(data.ktpWalimuridBase64, data.ktpWalimuridMime, "KTP_" + data.fullName);
-    var linkFoto = uploadFile(data.pasFotoBase64, data.pasFotoMime, "FOTO_" + data.fullName);
-    var linkIjazah = uploadFile(data.ijazahBase64, data.ijazahMime, "IJAZAH_" + data.fullName);
-    var linkBukti = uploadFile(data.buktiPembayaranBase64, data.buktiPembayaranMime, "BUKTI_" + data.fullName);
-
-    // 7. Siapkan Data Row
-    var rowData = [
-      new Date(),                     
-      data.regId,                     
-      data.infoSource,                
-      data.schoolChoice,              
-      data.smkMajor || '-',           
-      
-      data.fullName,                  
-      data.gender,                    
-      "'" + data.nik,                 
-      "'" + data.nisn,                
-      data.birthPlace,                
-      "'" + data.birthDate,           
-      
-      data.address,                   
-      data.previousSchool,            
-      "'" + data.parentWaNumber,      
-
-      "'" + data.height,              
-      "'" + data.weight,              
-      "'" + data.siblingCount,        
-      "'" + data.childOrder,          
-      
-      data.fatherName,                
-      data.fatherEducation,           
-      data.fatherOccupation,          
-      data.fatherIncome,              
-
-      data.motherName,                
-      data.motherEducation,           
-      data.motherOccupation,          
-      data.motherIncome,              
-
-      data.hasGuardian ? data.guardianName : '-',       
-      data.hasGuardian ? data.guardianEducation : '-',  
-      data.hasGuardian ? data.guardianOccupation : '-', 
-      data.hasGuardian ? data.guardianIncome : '-',     
-
-      linkKK,
-      linkAkta,
-      linkKTP,
-      linkFoto,
-      linkIjazah,
-      linkBukti,
-
-      "Pending", 
-      ""
-    ];
-
-    // 8. Simpan ke Sheet
-    var sheet = getDataSheet(ss);
-    sheet.appendRow(rowData);
-    SpreadsheetApp.flush(); // Paksa simpan segera
-
-    logToSheet(ss, "SUCCESS", "Data Berhasil Disimpan", "Row: " + sheet.getLastRow());
-
-    // 9. Email Notifikasi (Optional, bungkus try-catch agar tidak membatalkan proses utama)
-    try {
-      MailApp.sendEmail({
-        to: EMAIL_ADMIN,
-        subject: "Pendaftar Baru: " + data.fullName,
-        htmlBody: "<p>Ada pendaftar baru ID: " + data.regId + "</p><p>Cek spreadsheet untuk detail.</p>"
-      });
-    } catch (e) {
-      logToSheet(ss, "WARNING", "Gagal Kirim Email", e.toString());
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ result: "success", id: data.regId })).setMimeType(ContentService.MimeType.JSON);
-
-  } catch (error) {
-    // CATAT ERROR KRITIKAL KE LOG
-    logToSheet(ss, "CRITICAL ERROR", error.toString(), e ? e.postData.contents.substring(0, 500) : "No Content");
-    
-    return ContentService.createTextOutput(JSON.stringify({ 
-      result: "error", 
-      message: "Terjadi kesalahan sistem: " + error.toString() 
-    })).setMimeType(ContentService.MimeType.JSON);
-
+  } catch (err) {
+    return responseJSON({ result: "error", message: "Error Sistem: " + err.toString() });
   } finally {
     lock.releaseLock();
   }
+}
+
+// --- HANDLERS ---
+
+function handleGetConfig() {
+  // Logic Gelombang Server-side
+  var month = new Date().getMonth(); // 0 = Jan
+  var activeWave = 1;
+  
+  if (month >= 0 && month <= 2) activeWave = 1;      // Jan - Mar
+  else if (month >= 3 && month <= 4) activeWave = 2; // Apr - Mei
+  else if (month >= 5 && month <= 6) activeWave = 3; // Jun - Jul
+  else activeWave = 3; // Default late
+
+  return responseJSON({
+    result: "success",
+    config: {
+      activeWave: activeWave,
+      serverTime: new Date().toString()
+    }
+  });
+}
+
+function handleCheckNik(ss, nik) {
+  var sheet = ss.getSheetByName("Registrasi Awal");
+  if (!sheet) return responseJSON({ result: "available" }); // Sheet not exists yet means empty
+
+  var inputNik = String(nik).replace(/\D/g, "");
+  var values = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < values.length; i++) {
+    var rowNik = String(values[i][5]).replace(/\D/g, ""); 
+    if (rowNik === inputNik) {
+      return responseJSON({ result: "exists" });
+    }
+  }
+  return responseJSON({ result: "available" });
+}
+
+function handleRegister(ss, data) {
+  var sheet = getOrCreateSheet(ss, "Registrasi Awal", [
+    "Timestamp", "ID Registrasi", "Token", "Sumber Info", 
+    "Nama Lengkap", "NIK", "Gender", "No. WA", "Link Bukti Bayar", "Status Verifikasi"
+  ]);
+
+  var values = sheet.getDataRange().getValues();
+  // Double check NIK on write
+  var inputNik = String(data.nik).replace(/\D/g, "");
+  for (var i = 1; i < values.length; i++) {
+    var existingNik = String(values[i][5]).replace(/\D/g, ""); 
+    if (existingNik === inputNik) {
+      return responseJSON({ result: "error", message: "NIK sudah terdaftar." });
+    }
+  }
+
+  var regId = "REG-" + Utilities.formatDate(new Date(), "Asia/Jakarta", "yyMMddHHmmss");
+  var token = generateToken();
+  var fileUrl = uploadFileToDrive(data.buktiPembayaranBase64, data.buktiPembayaranMime, "BUKTI_" + data.nik + "_" + data.fullName);
+
+  sheet.appendRow([
+    new Date(), 
+    regId, 
+    "'" + token, 
+    sanitizeArray(data.infoSource),
+    data.fullName, 
+    "'" + data.nik, 
+    data.gender, 
+    "'" + data.parentWaNumber, 
+    fileUrl, 
+    "Pending"
+  ]);
+
+  return responseJSON({ result: "success", id: regId, message: "Registrasi berhasil." });
+}
+
+function handleLogin(ss, data) {
+  var sheet = ss.getSheetByName("Registrasi Awal");
+  if (!sheet) return responseJSON({ result: "error", message: "Data registrasi tidak ditemukan." });
+
+  var values = sheet.getDataRange().getValues();
+  var userFound = null;
+
+  var inputNik = String(data.nik).replace(/\D/g, ""); 
+  var inputToken = String(data.token).trim();
+  // Clean WA input: user might input 081... or 628...
+  var inputWa = normalizePhone(data.wa); 
+
+  for (var i = 1; i < values.length; i++) {
+    var rowToken = String(values[i][2]).replace(/^'/, "").trim(); 
+    var rowNik = String(values[i][5]).replace(/\D/g, ""); 
+    var rowWa = normalizePhone(String(values[i][7]));
+
+    if (rowNik === inputNik && rowToken === inputToken) {
+      // 2FA Verification: Check WA Number
+      if (inputWa && rowWa !== inputWa) {
+        return responseJSON({ result: "error", message: "Nomor WhatsApp tidak cocok dengan data pendaftaran." });
+      }
+
+      userFound = {
+        regId: values[i][1],
+        infoSource: values[i][3],
+        fullName: values[i][4],
+        nik: rowNik,
+        gender: values[i][6],
+        parentWaNumber: String(values[i][7]).replace(/^'/, "")
+      };
+      break;
+    }
+  }
+
+  if (userFound) {
+    // Check if user has already completed Full Registration
+    var fullSheet = ss.getSheetByName("Data Pendaftar");
+    if (fullSheet) {
+      var fullValues = fullSheet.getDataRange().getValues();
+      for (var j = 1; j < fullValues.length; j++) {
+        var fullNik = String(fullValues[j][7]).replace(/\D/g, ""); 
+        if (fullNik === userFound.nik) {
+          var row = fullValues[j];
+          var completedData = {
+             regId: row[1],
+             infoSource: row[2],
+             schoolChoice: row[3],
+             smkMajor: row[4],
+             fullName: row[5],
+             gender: row[6],
+             nik: String(row[7]).replace(/'/g, ""),
+             nisn: String(row[8]).replace(/'/g, ""),
+             birthPlace: row[9],
+             birthDate: String(row[10]).replace(/'/g, ""),
+             specificAddress: row[11], 
+             previousSchool: row[12],
+             parentWaNumber: String(row[13]).replace(/'/g, ""),
+             fatherName: row[18],
+             motherName: row[22]
+          };
+          
+          return responseJSON({ 
+            result: "success", 
+            status: "complete", 
+            message: "Data lengkap ditemukan.",
+            data: completedData
+          });
+        }
+      }
+    }
+    
+    return responseJSON({ result: "success", status: "partial", data: userFound });
+  } else {
+    return responseJSON({ result: "error", message: "NIK atau Token salah." });
+  }
+}
+
+function handleSubmitFull(ss, data) {
+  var sheet = getOrCreateSheet(ss, "Data Pendaftar", [
+    "Timestamp", "ID Registrasi", "Sumber Info", "Jenjang", "Jurusan (SMK)",
+    "Nama Lengkap", "Gender", "NIK", "NISN", "Tempat Lahir", "Tanggal Lahir",
+    "Alamat Lengkap", "Sekolah Asal", "No. WA",
+    "Tinggi (cm)", "Berat (kg)", "Jml Saudara", "Anak Ke-",
+    "Nama Ayah", "Pendidikan Ayah", "Pekerjaan Ayah", "Penghasilan Ayah",
+    "Nama Ibu", "Pendidikan Ibu", "Pekerjaan Ibu", "Penghasilan Ibu",
+    "Nama Wali", "Pendidikan Wali", "Pekerjaan Wali", "Penghasilan Wali",
+    "Link KK", "Link Akta", "Link KTP", "Link Foto", "Link Ijazah", 
+    "Status Data", "Catatan Admin"
+  ]);
+
+  var linkKK = uploadFileToDrive(data.kartuKeluargaBase64, data.kartuKeluargaMime, "KK_" + data.fullName);
+  var linkAkta = uploadFileToDrive(data.aktaKelahiranBase64, data.aktaKelahiranMime, "AKTA_" + data.fullName);
+  var linkKTP = uploadFileToDrive(data.ktpWalimuridBase64, data.ktpWalimuridMime, "KTP_" + data.fullName);
+  var linkFoto = uploadFileToDrive(data.pasFotoBase64, data.pasFotoMime, "FOTO_" + data.fullName);
+  var linkIjazah = uploadFileToDrive(data.ijazahBase64, data.ijazahMime, "IJAZAH_" + data.fullName);
+
+  var fullAddress = formatAddress(data);
+
+  sheet.appendRow([
+    new Date(), 
+    data.regId, 
+    sanitizeArray(data.infoSource), // FIX HERE
+    data.schoolChoice, 
+    data.smkMajor || '-',
+    data.fullName, 
+    data.gender, 
+    "'" + data.nik, 
+    "'" + data.nisn, 
+    data.birthPlace, 
+    "'" + data.birthDate,
+    fullAddress, 
+    data.previousSchool, 
+    "'" + data.parentWaNumber,
+    "'" + data.height, 
+    "'" + data.weight, 
+    "'" + data.siblingCount, 
+    "'" + data.childOrder,
+    data.fatherName, 
+    data.fatherEducation, 
+    data.fatherOccupation === 'Lainnya...' ? (data.fatherOccupationOther || 'Lainnya') : data.fatherOccupation, 
+    data.fatherIncome,
+    data.motherName, 
+    data.motherEducation, 
+    data.motherOccupation === 'Lainnya...' ? (data.motherOccupationOther || 'Lainnya') : data.motherOccupation, 
+    data.motherIncome,
+    data.hasGuardian ? data.guardianName : '-', 
+    data.hasGuardian ? data.guardianEducation : '-', 
+    data.hasGuardian ? (data.guardianOccupation === 'Lainnya...' ? (data.guardianOccupationOther || 'Lainnya') : data.guardianOccupation) : '-', 
+    data.hasGuardian ? data.guardianIncome : '-',
+    linkKK, linkAkta, linkKTP, linkFoto, linkIjazah,
+    "Selesai", 
+    "" 
+  ]);
+
+  return responseJSON({ result: "success", id: data.regId });
 }

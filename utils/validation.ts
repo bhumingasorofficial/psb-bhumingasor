@@ -1,29 +1,35 @@
 
 import { formSchema, FormData, FormErrors } from '../types';
 
-// Mapping fields to steps for partial validation
+// Validasi untuk Full Form Mode (setelah Login)
+// Note: Step 1 (Survey) diisi otomatis dari backend saat login, jadi tidak perlu validasi input user.
+// Step sequence in UI:
+// 1. Data Siswa (A,B,C,F)
+// 2. Data Ortu (E)
+// 3. Dokumen
+// 4. Review & Submit
+
 const STEP_FIELDS: Record<number, Extract<keyof FormData, string>[]> = {
-    1: ['infoSource'],
-    
-    // Step 2: Student Identity (A), Address (B), Contact (C), Periodic (F)
-    2: [
+    // Step 1: Student Data
+    1: [
         'schoolChoice', 'smkMajor', 
-        'fullName', 'gender', 'nik', 'nisn', 'birthPlace', 'birthDate', 'previousSchool',
+        'nisn', 'birthPlace', 'birthDate', 'previousSchool',
         'province', 'city', 'district', 'village', 'specificAddress', 'rt', 'rw', 'postalCode',
-        'parentWaNumber', // C. Kontak
-        'height', 'weight', 'siblingCount', 'childOrder' // F. Data Periodik
+        'parentWaNumber', 'height', 'weight', 'siblingCount', 'childOrder'
     ],
     
-    // Step 3: Parents (E) & Guardian
-    3: [
+    // Step 2: Parents
+    2: [
         'fatherName', 'fatherEducation', 'fatherOccupation', 'fatherOccupationOther', 'fatherIncome',
         'motherName', 'motherEducation', 'motherOccupation', 'motherOccupationOther', 'motherIncome',
         'hasGuardian', 'guardianName', 'guardianEducation', 'guardianOccupation', 'guardianOccupationOther', 'guardianIncome'
     ],
     
-    4: ['kartuKeluarga', 'aktaKelahiran', 'ktpWalimurid', 'pasFoto', 'ijazah'],
-    5: ['buktiPembayaran'],
-    6: ['termsAgreed'],
+    // Step 3: Documents
+    3: ['kartuKeluarga', 'aktaKelahiran', 'ktpWalimurid', 'pasFoto', 'ijazah'],
+    
+    // Step 4: Final
+    4: ['finalAgreement'],
 };
 
 export const validateStep = (step: number, formData: FormData): { success: boolean, errors: FormErrors } => {

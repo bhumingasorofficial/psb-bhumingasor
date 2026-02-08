@@ -20,14 +20,18 @@ const requiredImageSchema = (message: string) => z.instanceof(File, { message })
 
 // --- Enums ---
 export enum SchoolLevel {
+    MI = 'MI Bhumi Ngasor',
     SMP = 'SMP Bhumi Ngasor',
     SMK = 'SMK Bhumi Ngasor',
+    KULIAH = 'Perguruan Tinggi (Kuliah)',
+    MONDOK = 'Lainnya (Mondok Saja)',
 }
 
 export enum SmkMajor {
     DKV = 'Desain Komunikasi Visual (DKV)',
     TKR = 'Teknik Kendaraan Ringan (TKR)',
-    EMPTY = '', // Untuk SMP
+    AKUNTANSI = 'Akuntansi',
+    EMPTY = '', // Untuk SMP/MI/Lainnya
 }
 
 export enum Gender {
@@ -71,23 +75,39 @@ export enum ParentOccupation {
     LAINNYA = 'Lainnya...',
 }
 
-// --- Zod Schema ---
-export const baseFormSchema = z.object({
-    // Security Field (Honeypot)
+// --- SCHEMA 1: REGISTRASI AWAL ---
+export const registrationSchema = z.object({
     botField: z.string().optional(),
+    infoSource: z.array(z.string()).min(1, 'Pilih minimal satu sumber informasi.'),
+    fullName: z.string().min(1, 'Nama lengkap wajib diisi'),
+    nik: z.string().regex(/^\d{16}$/, 'NIK harus 16 digit angka'),
+    gender: z.nativeEnum(Gender),
+    parentWaNumber: z.string().regex(/^(\+62|62|0)8[1-9][0-9]{7,11}$/, 'No. WA tidak valid'),
+    buktiPembayaran: requiredImageSchema('Bukti Pembayaran wajib diunggah'),
+    termsAgreed: z.boolean().refine(val => val === true, "Wajib menyetujui"),
+});
 
-    // Step 1: Survey
-    infoSource: z.array(z.string()).min(1, 'Mohon pilih setidaknya satu sumber informasi.'),
+export type RegistrationFormData = z.infer<typeof registrationSchema>;
 
-    // Step 2: Student Data (A, B, C, F)
+// --- SCHEMA 2: LOGIN ---
+export const loginSchema = z.object({
+    nik: z.string().regex(/^\d{16}$/, 'NIK harus 16 digit'),
+    token: z.string().min(6, 'Token tidak valid'),
+});
+
+// --- SCHEMA 3: DATA LENGKAP (FULL FORM) ---
+export const baseFormSchema = z.object({
+    // Basic fields inherited/readonly
+    regId: z.string().optional(),
+    fullName: z.string(),
+    nik: z.string(),
+    gender: z.nativeEnum(Gender),
+    infoSource: z.array(z.string()).optional(),
+
+    // Step 2: Student Data
     schoolChoice: z.nativeEnum(SchoolLevel),
     smkMajor: z.string().optional(), 
-    
-    // A. Identitas
-    fullName: z.string().min(1, 'Nama lengkap wajib diisi'),
-    gender: z.nativeEnum(Gender),
-    nik: z.string().regex(/^\d{16}$/, 'NIK harus terdiri dari 16 digit angka'),
-    nisn: z.string().regex(/^\d{10}$/, 'NISN harus terdiri dari 10 digit angka'),
+    nisn: z.string().optional(), // Base is optional, refined later
     birthPlace: z.string().min(1, 'Tempat lahir wajib diisi'),
     birthDate: z.string().min(1, 'Tanggal lahir wajib diisi'),
     previousSchool: z.string().min(1, 'Asal sekolah wajib diisi'),
@@ -102,8 +122,8 @@ export const baseFormSchema = z.object({
     rw: z.string().min(1, 'RW wajib diisi'),
     postalCode: z.string().regex(/^\d{5}$/, 'Kode Pos harus 5 digit angka'),
 
-    // C. Kontak
-    parentWaNumber: z.string().regex(/^(\+62|62|0)8[1-9][0-9]{7,11}$/, 'No. HP Utama tidak valid'),
+    // C. Kontak (Pre-filled but editable logic handled in UI)
+    parentWaNumber: z.string(),
 
     // F. Data Periodik
     height: z.string().min(1, 'Tinggi badan wajib diisi'),
@@ -112,21 +132,18 @@ export const baseFormSchema = z.object({
     childOrder: z.string().min(1, 'Anak ke- wajib diisi'),
 
     // E. Orang Tua / Wali
-    // Ayah
     fatherName: z.string().min(1, 'Nama ayah wajib diisi'),
     fatherEducation: z.nativeEnum(ParentEducation),
     fatherOccupation: z.nativeEnum(ParentOccupation),
     fatherOccupationOther: z.string().optional(),
     fatherIncome: z.nativeEnum(ParentIncome),
     
-    // Ibu
     motherName: z.string().min(1, 'Nama ibu wajib diisi'),
     motherEducation: z.nativeEnum(ParentEducation),
     motherOccupation: z.nativeEnum(ParentOccupation),
     motherOccupationOther: z.string().optional(),
     motherIncome: z.nativeEnum(ParentIncome),
 
-    // Wali (Opsional flag)
     hasGuardian: z.boolean(),
     guardianName: z.string().optional(),
     guardianEducation: z.string().optional(), 
@@ -140,15 +157,14 @@ export const baseFormSchema = z.object({
     ktpWalimurid: requiredFileSchema('File KTP Orang Tua/Wali wajib diunggah'),
     pasFoto: requiredImageSchema('Pas Foto wajib diunggah'),
     ijazah: requiredFileSchema('File Ijazah/SKL wajib diunggah'),
-    buktiPembayaran: requiredImageSchema('Bukti Pembayaran wajib diunggah'),
-
-    // Step 5: Final Confirmation
-    termsAgreed: z.boolean().refine(val => val === true, "Anda harus menyetujui pernyataan kebenaran data"),
+    
+    // Final Confirmation
+    finalAgreement: z.boolean().refine(val => val === true, "Anda harus menyetujui pernyataan kebenaran data"),
 });
 
 // Refined schema for custom logic validation
 export const formSchema = baseFormSchema.superRefine((data, ctx) => {
-    // Validasi Jurusan SMK
+    // 1. Validasi Jurusan SMK
     if (data.schoolChoice === SchoolLevel.SMK && (!data.smkMajor || data.smkMajor === '')) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -157,7 +173,19 @@ export const formSchema = baseFormSchema.superRefine((data, ctx) => {
         });
     }
 
-    // Validasi Pekerjaan Lainnya
+    // 2. Validasi NISN (Wajib untuk SMP, SMK, Kuliah. Tidak Wajib untuk MI & Mondok Saja)
+    const levelsRequiringNisn = [SchoolLevel.SMP, SchoolLevel.SMK, SchoolLevel.KULIAH];
+    if (levelsRequiringNisn.includes(data.schoolChoice)) {
+        if (!data.nisn || !/^\d{10}$/.test(data.nisn)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['nisn'],
+                message: 'NISN harus terdiri dari 10 digit angka',
+            });
+        }
+    }
+
+    // 3. Validasi Pekerjaan Lainnya
     if (data.fatherOccupation === ParentOccupation.LAINNYA && !data.fatherOccupationOther?.trim()) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fatherOccupationOther'], message: 'Detail pekerjaan Ayah wajib diisi' });
     }
@@ -165,7 +193,7 @@ export const formSchema = baseFormSchema.superRefine((data, ctx) => {
          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['motherOccupationOther'], message: 'Detail pekerjaan Ibu wajib diisi' });
     }
 
-    // Validasi Wali jika dicentang
+    // 4. Validasi Wali
     if (data.hasGuardian) {
         if (!data.guardianName) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['guardianName'], message: 'Nama Wali wajib diisi' });
         if (!data.guardianEducation) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['guardianEducation'], message: 'Pendidikan Wali wajib diisi' });
@@ -182,5 +210,5 @@ export const formSchema = baseFormSchema.superRefine((data, ctx) => {
 export type FormData = z.infer<typeof formSchema>;
 
 export type FormErrors = {
-    [K in Extract<keyof FormData, string>]?: string | string[];
+    [key: string]: string | string[];
 };
