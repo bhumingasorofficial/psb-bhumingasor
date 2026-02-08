@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { 
     FormData, registrationSchema, RegistrationFormData, 
@@ -788,9 +787,7 @@ const App: React.FC = () => {
                                     <ReviewSection 
                                         formData={formData}
                                         errors={formErrors}
-                                        handleChange={handleFullFormChange as any}
                                         onEditStep={(step) => setCurrentStep(step)}
-                                        setTurnstileToken={() => {}} // Not needed in full form confirm
                                     />
 
                                     <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">

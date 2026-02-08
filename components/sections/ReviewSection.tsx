@@ -1,80 +1,13 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { FormData, FormErrors, SchoolLevel } from '../../types';
 
 interface Props {
     formData: FormData;
     errors: FormErrors;
-    handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onEditStep: (step: number) => void;
-    setTurnstileToken: (token: string) => void; 
 }
 
-const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEditStep, setTurnstileToken }) => {
-    const turnstileRef = useRef<HTMLDivElement>(null);
-    const [turnstileError, setTurnstileError] = useState(false);
-
-    // Initialize Turnstile with safety checks
-    useEffect(() => {
-        const siteKey = '1x00000000000000000000AA';
-
-        const renderTurnstile = () => {
-            if (!turnstileRef.current) return;
-            try {
-                const w = window as any;
-                if (w.turnstile) {
-                    turnstileRef.current.innerHTML = '';
-                    w.turnstile.render(turnstileRef.current, {
-                        sitekey: siteKey, 
-                        callback: function(token: string) {
-                            setTurnstileToken(token);
-                        },
-                        'expired-callback': function() {
-                            setTurnstileToken('');
-                        },
-                        'error-callback': function() {
-                            setTurnstileError(true);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn("Turnstile Error in ReviewSection:", e);
-                setTurnstileError(true);
-            }
-        };
-
-        renderTurnstile();
-        
-        // Retry logic if script lazy loads
-        let attempts = 0;
-        const interval = setInterval(() => {
-            attempts++;
-            if (attempts > 5) {
-                clearInterval(interval);
-                // Assume blocked if not loaded
-                const w = window as any;
-                if (!w.turnstile) setTurnstileError(true);
-                return;
-            }
-            try {
-                const w = window as any;
-                if (w.turnstile && turnstileRef.current && !turnstileRef.current.hasChildNodes()) {
-                    renderTurnstile();
-                    clearInterval(interval);
-                }
-            } catch(e) {}
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [setTurnstileToken]);
-
-    // Auto-bypass in development/preview if blocked
-    useEffect(() => {
-        if (turnstileError) {
-            setTurnstileToken("BYPASS_TOKEN_DEV");
-        }
-    }, [turnstileError, setTurnstileToken]);
-
+const ReviewSection: React.FC<Props> = ({ formData, errors, onEditStep }) => {
     const DataRow = ({ label, value }: { label: string, value: string }) => (
         <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-stone-100 last:border-0 gap-1 sm:gap-4">
             <span className="text-[10px] sm:text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0">{label}</span>
@@ -112,7 +45,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                 <div className="space-y-6">
                     
                     <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
-                        <SectionHeader title="Biodata Santri" step={2} />
+                        <SectionHeader title="Biodata Santri" step={1} />
                         <div className="mb-3 bg-primary-50 p-2 rounded text-center border border-primary-100">
                             <span className="text-xs text-primary-600 font-bold uppercase block mb-1">Jenjang Pilihan</span>
                             <span className="text-base text-primary-800 font-bold">
@@ -122,7 +55,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                         </div>
                         <DataRow label="Nama Lengkap" value={formData.fullName} />
                         <DataRow label="NIK" value={formData.nik} />
-                        <DataRow label="NISN" value={formData.nisn} />
+                        <DataRow label="NISN" value={formData.nisn || '-'} />
                         <DataRow label="TTL" value={`${formData.birthPlace}, ${formData.birthDate}`} />
                         <DataRow label="Asal Sekolah" value={formData.previousSchool} />
                         <DataRow 
@@ -133,7 +66,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                     </div>
 
                      <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
-                        <SectionHeader title="Data Periodik" step={2} />
+                        <SectionHeader title="Data Periodik" step={1} />
                         <div className="grid grid-cols-2 gap-x-4">
                              <DataRow label="Tinggi" value={`${formData.height} cm`} />
                              <DataRow label="Berat" value={`${formData.weight} kg`} />
@@ -143,7 +76,7 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                     </div>
 
                     <div className="bg-stone-50 rounded-xl p-4 sm:p-5 border border-stone-200 shadow-sm">
-                        <SectionHeader title="Data Ortu & Wali" step={3} />
+                        <SectionHeader title="Data Ortu & Wali" step={2} />
                         <DataRow label="Nama Ayah" value={formData.fatherName} />
                         <DataRow label="Pekerjaan Ayah" value={formData.fatherOccupation} />
                         <DataRow label="Nama Ibu" value={formData.motherName} />
@@ -158,10 +91,10 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                     </div>
                 </div>
 
-                {/* Kolom Kanan: Dokumen & Persetujuan */}
+                {/* Kolom Kanan: Dokumen */}
                 <div className="space-y-6">
                     <div className="bg-primary-50/50 rounded-xl p-4 sm:p-5 border border-primary-100">
-                        <SectionHeader title="Berkas Dokumen" step={4} />
+                        <SectionHeader title="Berkas Dokumen" step={3} />
                         <ul className="space-y-3 mb-4">
                             {[
                                 { name: 'Kartu Keluarga', file: formData.kartuKeluarga },
@@ -194,61 +127,6 @@ const ReviewSection: React.FC<Props> = ({ formData, errors, handleChange, onEdit
                                 </li>
                             ))}
                         </ul>
-
-                        <div className="border-t border-primary-200 pt-3">
-                            <SectionHeader title="Pembayaran" step={5} />
-                            <div className="flex items-center gap-3 text-sm font-medium">
-                                {formData.buktiPembayaran ? (
-                                    <>
-                                        <div className="w-6 h-6 rounded-full bg-emerald-200 flex items-center justify-center shrink-0">
-                                            <svg className="w-3 h-3 text-emerald-800" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" /></svg>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <span className="text-emerald-900 block">Bukti Pembayaran</span> 
-                                            <span className="text-[10px] text-emerald-600 truncate block">{formData.buktiPembayaran.name}</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                                            <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <span className="text-red-700">Bukti Pembayaran</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`p-4 sm:p-6 rounded-xl border-2 transition-all ${formData.termsAgreed ? 'bg-white border-accent-500 shadow-lg shadow-accent-100' : 'bg-stone-50 border-stone-200'}`}>
-                        <label className="flex items-start gap-3 sm:gap-4 cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                name="termsAgreed"
-                                checked={formData.termsAgreed}
-                                onChange={(e) => handleChange(e as any)}
-                                className="mt-1 h-5 w-5 rounded border-stone-300 text-accent-600 focus:ring-accent-500 transition-all cursor-pointer shrink-0"
-                            />
-                            <div className="flex-1">
-                                <span className="block text-sm font-bold text-stone-800 mb-1">Ikrar Kebenaran Data</span>
-                                <p className="text-xs text-stone-500 leading-relaxed text-justify">
-                                    Bismillah. Saya menyatakan bahwa seluruh data calon santri yang saya inputkan adalah benar dan dapat dipertanggungjawabkan.
-                                </p>
-                                {errors.termsAgreed && <p className="mt-2 text-[10px] font-bold text-red-600 uppercase tracking-wider">{errors.termsAgreed}</p>}
-                            </div>
-                        </label>
-                    </div>
-
-                    {/* TURNSTILE WIDGET CONTAINER */}
-                    <div className="flex flex-col items-center gap-2">
-                        <div ref={turnstileRef} className="min-h-[65px]"></div>
-                        {turnstileError && (
-                            <p className="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded">
-                                ⚠️ Captcha tidak dimuat (Preview Mode). Otomatis diverifikasi.
-                            </p>
-                        )}
                     </div>
                 </div>
             </div>
