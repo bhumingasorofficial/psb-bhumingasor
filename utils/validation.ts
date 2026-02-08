@@ -7,7 +7,8 @@ import { formSchema, FormData, FormErrors } from '../types';
 // 1. Data Siswa (A,B,C,F)
 // 2. Data Ortu (E)
 // 3. Dokumen
-// 4. Review & Submit
+// 4. Rincian Biaya (Informational Only - No Validation)
+// 5. Review & Submit
 
 const STEP_FIELDS: Record<number, Extract<keyof FormData, string>[]> = {
     // Step 1: Student Data
@@ -28,13 +29,16 @@ const STEP_FIELDS: Record<number, Extract<keyof FormData, string>[]> = {
     // Step 3: Documents
     3: ['kartuKeluarga', 'aktaKelahiran', 'ktpWalimurid', 'pasFoto', 'ijazah'],
     
-    // Step 4: Final
-    4: ['finalAgreement'],
+    // Step 4: Cost (No input fields)
+    4: [],
+
+    // Step 5: Final
+    5: ['finalAgreement'],
 };
 
 export const validateStep = (step: number, formData: FormData): { success: boolean, errors: FormErrors } => {
     const fieldsToValidate = STEP_FIELDS[step];
-    if (!fieldsToValidate) {
+    if (!fieldsToValidate || fieldsToValidate.length === 0) {
         return { success: true, errors: {} };
     }
 

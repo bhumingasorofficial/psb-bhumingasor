@@ -22,7 +22,7 @@ const LOGO_URL = 'https://github.com/bhumingasorofficial/asset-bhumingasor/blob/
 const WA_NUMBER_HELP = '6281333123600';   
 
 // --- STEPS FOR FULL FORM ---
-const FULL_FORM_STEPS = ['Data Siswa', 'Orang Tua', 'Berkas', 'Konfirmasi'];
+const FULL_FORM_STEPS = ['Data Siswa', 'Orang Tua', 'Berkas', 'Biaya', 'Konfirmasi'];
 const AUTOSAVE_KEY = 'psb_autosave_v2';
 
 const BrandHeader = () => (
@@ -776,6 +776,13 @@ const App: React.FC = () => {
                                 />
                             )}
                             {currentStep === 4 && (
+                                <PaymentSection 
+                                    activeWave={serverConfig.activeWave}
+                                    schoolLevel={formData.schoolChoice}
+                                    gender={formData.gender}
+                                />
+                            )}
+                            {currentStep === 5 && (
                                 <div className="space-y-6">
                                     {/* REVIEW SECTION INCLUDED HERE */}
                                     <ReviewSection 
@@ -812,7 +819,7 @@ const App: React.FC = () => {
                                     Kembali
                                 </button>
                             )}
-                            {currentStep < 4 && (
+                            {currentStep < 5 && (
                                 <button onClick={handleNextStep} className="ml-auto px-8 py-3 bg-stone-800 text-white font-bold rounded-xl hover:bg-stone-900 shadow-lg transition-all active:scale-95">
                                     Lanjut
                                 </button>
