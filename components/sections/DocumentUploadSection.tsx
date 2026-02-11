@@ -79,9 +79,16 @@ const DocumentUploadSection: React.FC<Props> = ({ formData, errors, handleFileCh
                             file={formData.pasFoto} 
                             showPreview 
                         />
-                         <p className="text-xs text-blue-600 font-semibold mt-2 text-center">
-                            *Ketentuan: Baju Putih, Kopyah Hitam dan Background Biru
-                        </p>
+                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div className="bg-white/60 p-2 rounded-lg border border-blue-200 text-center">
+                                <span className="font-bold text-blue-800 block mb-0.5 uppercase tracking-wider">Putra</span>
+                                <span className="text-blue-900 font-medium">Baju Taqwa Putih, Kopyah Hitam & Background Biru</span>
+                            </div>
+                            <div className="bg-white/60 p-2 rounded-lg border border-blue-200 text-center">
+                                <span className="font-bold text-blue-800 block mb-0.5 uppercase tracking-wider">Putri</span>
+                                <span className="text-blue-900 font-medium">Baju Gamis Putih, Kerudung Putih & Background Biru</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="group sm:col-span-2">
