@@ -60,7 +60,6 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
 
         return {
             items: [
-                // Item Pendaftaran DIHAPUS sesuai permintaan user
                 { name: "Buku Pegangan Siswa", price: formatRp(bukuPriceNum) },
                 { 
                     name: `Paket Seragam ${isMale ? 'Putra' : 'Putri'}`, 
@@ -75,7 +74,35 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
         };
     };
 
+    // --- DATA BIAYA SEKOLAH (SMK) ---
+    const getSmkCostData = () => {
+        const isMale = gender === Gender.LakiLaki;
+        // Biaya Seragam: Putra 706.000, Putri 736.000
+        const uniformPriceNum = isMale ? 706000 : 736000;
+        const bukuPriceNum = 135000;
+        
+        // Pendaftaran 50.000 tidak dimasukkan disini karena sudah dibayar di Token (Step 1)
+        // Total = Buku + Seragam
+        const grandTotalNum = bukuPriceNum + uniformPriceNum; 
+
+        return {
+            items: [
+                { name: "Buku Pegangan Siswa", price: formatRp(bukuPriceNum) },
+                { 
+                    name: `Paket Seragam ${isMale ? 'Putra' : 'Putri'}`, 
+                    price: formatRp(uniformPriceNum),
+                    detail: isMale 
+                        ? "(Abu-abu, Kopyah Hitam, Sabuk, Dasi, Catle Pack, Seragam Coklat, Hasduk)" 
+                        : "(Abu-abu, Hijab Putih, Sabuk, Dasi, Catle Pack, Hijab Catle Pack, Seragam Coklat, Hasduk, Hijab Coklat)"
+                }
+            ],
+            total: formatRp(grandTotalNum),
+            totalNum: grandTotalNum
+        };
+    };
+
     const smpData = getSmpCostData();
+    const smkData = getSmkCostData();
 
     // Check school type
     const isMI = schoolLevel === SchoolLevel.MI;
@@ -85,8 +112,6 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
 
     // --- CALCULATE GRAND TOTAL (PONDOK + SEKOLAH) ---
     // 1. Get Pondok Cost based on current active wave (or active tab in mobile)
-    //    We use 'activeWave' prop for the main logic, but for dynamic UI display we might check activeTab logic if needed.
-    //    Ideally, calculation should be based on the *current active wave* of registration.
     const currentWave = activeWave || 1; 
     const pondokTotalStr = currentWave === 1 ? pondokCostData.totals.gel1 : currentWave === 2 ? pondokCostData.totals.gel2 : pondokCostData.totals.gel3;
     const pondokTotalNum = parseRp(pondokTotalStr);
@@ -95,7 +120,7 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
     let schoolTotalNum = 0;
     if (isMI) schoolTotalNum = 300000;
     if (isSMP) schoolTotalNum = smpData.totalNum;
-    // SMK is 0 (Info menyusul)
+    if (isSMK) schoolTotalNum = smkData.totalNum;
 
     // 3. Sum
     const grandTotalAll = pondokTotalNum + schoolTotalNum;
@@ -234,19 +259,8 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                              </div>
                         )}
 
-                        {/* CASE SMK */}
-                        {isSMK && (
-                             <div className="p-10 text-center">
-                                <div className="inline-block p-4 bg-amber-50 rounded-full text-amber-500 mb-4">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                </div>
-                                <h5 className="text-lg font-bold text-stone-700">Informasi Menyusul</h5>
-                                <p className="text-sm text-stone-500">Rincian biaya untuk jenjang SMK akan diinformasikan lebih lanjut oleh panitia.</p>
-                             </div>
-                        )}
-
-                        {/* CASE SMP */}
-                        {isSMP && (
+                        {/* CASE SMP & SMK */}
+                        {(isSMP || isSMK) && (
                             <div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
@@ -257,7 +271,7 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-stone-100">
-                                            {smpData.items.map((item, idx) => (
+                                            {(isSMK ? smkData.items : smpData.items).map((item, idx) => (
                                                 <tr key={idx} className="hover:bg-stone-50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="font-bold text-stone-700">{item.name}</div>
@@ -268,7 +282,9 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                                             ))}
                                             <tr className="bg-indigo-50">
                                                 <td className="px-6 py-4 font-bold text-indigo-900 uppercase">Total Biaya Sekolah</td>
-                                                <td className="px-6 py-4 text-right font-black text-lg text-indigo-700">Rp. {smpData.total}</td>
+                                                <td className="px-6 py-4 text-right font-black text-lg text-indigo-700">
+                                                    Rp. {isSMK ? smkData.total : smpData.total}
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -294,7 +310,6 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                         <div className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-lg">
                             Rp. {formatRp(grandTotalAll)}
                         </div>
-                        {isSMK && <p className="text-[10px] text-amber-400 mt-1">*Belum termasuk biaya SMK</p>}
                     </div>
                 </div>
             )}
