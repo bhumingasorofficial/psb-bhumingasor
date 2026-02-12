@@ -72,10 +72,11 @@ const PrintableCard = ({ data }: { data: FormData }) => {
                 <div className="flex items-center border-b-4 border-double border-black pb-4 mb-8">
                     <img src={LOGO_URL} alt="Logo" className="w-24 h-24 object-contain mr-6" />
                     <div className="text-center flex-1">
-                        <h2 className="text-lg font-bold uppercase tracking-wide mb-1 text-black">Yayasan Pendidikan Pondok Pesantren</h2>
-                        <h1 className="text-3xl font-black uppercase tracking-wider mb-2 text-black">BHUMI NGASOR AR-RIDHO</h1>
-                        <p className="text-sm text-black">Jl. Pesantren No. 99, Dsn. Ngasor, Ds. Bendosari, Kec. Pujon, Kab. Malang</p>
-                        <p className="text-sm font-bold text-black">Telp/WA: {WA_NUMBER_HELP} | Email: psb@bhumingasor.com</p>
+                        <h2 className="text-sm font-bold uppercase tracking-wide mb-0 text-black leading-tight">YAYASAN PONDOK PESANTREN</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-wide mb-1 text-black leading-tight">AN-NUR HIDAYATUSSALAM</h2>
+                        <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black leading-none">BHUMI NGASOR</h1>
+                        <p className="text-xs text-black leading-relaxed">Jl. Pendopo Kamulyan Rt.02 Rw.01 Desa Bakalan Kec. Bakalan Kab. Malang Jawa Timur</p>
+                        <p className="text-xs font-bold text-black mt-1">Telp/WA: 0813-3312-3600 | Email: bhumingasorofficial@gmail.com</p>
                     </div>
                 </div>
 
@@ -504,7 +505,6 @@ const App: React.FC = () => {
                 } else {
                     setFormErrors(prev => { 
                         const newErrors = { ...prev }; 
-                        delete newErrors[name]; 
                         return newErrors; 
                     });
                 }
@@ -546,7 +546,6 @@ const App: React.FC = () => {
             delete payload.pasFoto;
             delete payload.ijazah;
 
-            // Granular Feedback simulation for better UX
             setLoadingMessage('Sedang Mengompresi & Menyiapkan Dokumen...');
             
             const fileFields = ['kartuKeluarga', 'aktaKelahiran', 'ktpWalimurid', 'pasFoto', 'ijazah'];
@@ -568,22 +567,18 @@ const App: React.FC = () => {
                 body: JSON.stringify(payload)
             });
 
-            // Clear Autosave
             localStorage.removeItem(AUTOSAVE_KEY);
             
             setLoadingMessage('Menyimpan Data...');
             await new Promise(r => setTimeout(r, 4000));
             addToast('success', 'Berhasil', 'Data lengkap disimpan.');
             
-            // SET SUCCESS TYPE TO FULL FORM
             setSuccessType('full-form');
             setView('success');
         } catch (e) {
             addToast('error', 'Gagal Menyimpan', 'Terjadi kesalahan jaringan.');
         } finally { setLoading(false); }
     };
-
-    // --- VIEWS ---
 
     if (view === 'welcome') {
         return (
@@ -611,7 +606,6 @@ const App: React.FC = () => {
     }
 
     if (view === 'success') {
-        // CASE 1: SUCCESS INITIAL REGISTRATION (TOKEN ONLY)
         if (successType === 'registration') {
             return (
                 <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 no-print">
@@ -645,7 +639,6 @@ const App: React.FC = () => {
             );
         }
 
-        // CASE 2: SUCCESS FULL FORM SUBMISSION (SURAT RESMI)
         return (
             <>
                 <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 no-print">
@@ -674,10 +667,18 @@ const App: React.FC = () => {
                             <button onClick={handleReset} className="w-full px-6 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 text-sm mt-2">
                                 Kembali ke Menu Utama
                             </button>
+
+                            <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-left flex gap-3">
+                                <div className="shrink-0 text-red-500 mt-0.5">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                </div>
+                                <p className="text-[11px] sm:text-xs text-red-800 font-bold leading-relaxed">
+                                    PERHATIAN: Setiap Wali Santri/Santri yang telah berhasil mengisi data lengkap wajib mencetak Bukti Pendaftaran (PDF) di atas. Bukti ini harus disimpan dengan baik dan dibawa saat kedatangan di Pondok Pesantren sebagai syarat utama registrasi ulang.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {/* Printable Section - Only rendered when FULL FORM success */}
                 <PrintableCard data={formData} />
             </>
         );
@@ -698,8 +699,6 @@ const App: React.FC = () => {
             <BrandHeader />
 
             <div className="w-full max-w-5xl bg-white rounded-xl sm:rounded-[2.5rem] shadow-sm sm:shadow-xl border border-stone-200 p-4 sm:p-12 relative min-h-[500px] no-print mx-auto">
-                
-                {/* Back Button if not in welcome */}
                 <button onClick={() => setView('welcome')} className="absolute top-4 left-4 sm:top-10 sm:left-10 text-stone-400 hover:text-stone-600 flex items-center gap-1 text-sm font-bold transition-colors p-2 sm:p-0">
                     <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     <span className="hidden sm:inline">Menu Utama</span>
@@ -772,7 +771,7 @@ const App: React.FC = () => {
                                     errors={formErrors} 
                                     handleFileChange={handleFullFormFile} 
                                     handleFileClear={(n) => setFormData(p => ({...p, [n]: null}))}
-                                    activeWave={serverConfig.activeWave} // Pass Config to Step 3
+                                    activeWave={serverConfig.activeWave} 
                                 />
                             )}
                             {currentStep === 4 && (
@@ -784,7 +783,6 @@ const App: React.FC = () => {
                             )}
                             {currentStep === 5 && (
                                 <div className="space-y-6">
-                                    {/* REVIEW SECTION INCLUDED HERE */}
                                     <ReviewSection 
                                         formData={formData}
                                         errors={formErrors}
