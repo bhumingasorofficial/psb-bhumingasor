@@ -1,9 +1,8 @@
 
 /**
- * BACKEND SYSTEM PSB BHUMI NGASOR (VERSION 7.1 - FIXED LOGIN & VALIDATION)
- * - Fixed: Invalid GET Action for Login
- * - Implemented: Login Verification Logic
- * - Helper: Phone Normalization
+ * BACKEND SYSTEM PSB BHUMI NGASOR (VERSION 7.3 - FILE NAMING FIX)
+ * - Fixed: File Naming Convention (Type_Name_Level)
+ * - Helper: getExtension for proper file types
  */
 
 var SPREADSHEET_ID = "1YJAjnHFP9wnAvSh1LJ53M0nxKTvHDt9j9jWLYAcm1Zs";
@@ -42,6 +41,40 @@ function normalizePhone(phone) {
   return p;
 }
 
+// --- HELPER: GET EXTENSION ---
+function getExtension(mimeType) {
+  if (mimeType === 'image/jpeg') return '.jpg';
+  if (mimeType === 'image/png') return '.png';
+  if (mimeType === 'image/webp') return '.webp';
+  if (mimeType === 'application/pdf') return '.pdf';
+  return '';
+}
+
+// --- HELPER: SANITIZE FILENAME ---
+function sanitizeFilename(str) {
+  if (!str) return "";
+  return str.replace(/[^a-zA-Z0-9 ]/g, "").trim();
+}
+
+// --- HELPER: UPLOAD FILE ---
+function uploadFileToDrive(base64Data, mimeType, fileName, folderId) {
+  try {
+    if (!base64Data) return "-";
+    
+    var decoded = Utilities.base64Decode(base64Data);
+    var blob = Utilities.newBlob(decoded, mimeType, fileName);
+    var folder = DriveApp.getFolderById(folderId);
+    var file = folder.createFile(blob);
+    
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return file.getUrl();
+  } catch (e) {
+    Logger.log("Upload Error: " + e.toString());
+    return "ERROR_UPLOAD";
+  }
+}
+
 function logActivity(ss, actor, action, targetId, details) {
   try {
     var sheet = getOrCreateSheet(ss, "Log Aktivitas", ["Timestamp", "User/Actor", "Action", "Target ID", "Details"]);
@@ -64,7 +97,7 @@ function doGet(e) {
       return handleGetApplicants(ss, e.parameter);
     } else if (action === "GET_LOGS") {
        return handleGetLogs(ss, e.parameter.role);
-    } else if (action === "LOGIN") { // FIXED: Changed from LOGIN_STUDENT to LOGIN to match Frontend
+    } else if (action === "LOGIN") { 
       var params = {
         nik: e.parameter.nik,
         token: e.parameter.token,
@@ -85,7 +118,7 @@ function doGet(e) {
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) {
+  if (!lock.tryLock(30000)) { 
     return responseJSON({ result: "error", message: "Server sibuk, silakan coba lagi." });
   }
 
@@ -133,7 +166,6 @@ function handleGetConfig() {
   });
 }
 
-// FIXED: Implemented Login Logic
 function handleLoginStudent(ss, data) {
   var sheet = ss.getSheetByName("Registrasi Awal");
   if (!sheet) return responseJSON({ result: "error", message: "Data registrasi tidak ditemukan." });
@@ -145,15 +177,12 @@ function handleLoginStudent(ss, data) {
   var inputToken = String(data.token).trim();
   var inputWa = normalizePhone(data.wa); 
 
-  // Loop checking credentials
   for (var i = 1; i < values.length; i++) {
-    // Columns: 2=Token, 5=NIK, 7=WA
     var rowToken = String(values[i][2]).replace(/^'/, "").trim(); 
     var rowNik = String(values[i][5]).replace(/\D/g, ""); 
     var rowWa = normalizePhone(String(values[i][7]));
 
     if (rowNik === inputNik && rowToken === inputToken) {
-      // Security Check: WA Number must match
       if (inputWa && rowWa !== inputWa) {
         return responseJSON({ result: "error", message: "Nomor WhatsApp tidak cocok dengan data pendaftaran." });
       }
@@ -171,7 +200,6 @@ function handleLoginStudent(ss, data) {
   }
 
   if (userFound) {
-    // Check if user has completed Full Registration
     var fullSheet = ss.getSheetByName("Data Pendaftar");
     if (fullSheet) {
       var fullValues = fullSheet.getDataRange().getValues();
@@ -179,7 +207,6 @@ function handleLoginStudent(ss, data) {
         var fullNik = String(fullValues[j][7]).replace(/\D/g, ""); 
         if (fullNik === userFound.nik) {
           var row = fullValues[j];
-          // Map Full Data for Frontend Form
           var completedData = {
              regId: row[1],
              infoSource: String(row[2]),
@@ -194,7 +221,6 @@ function handleLoginStudent(ss, data) {
              specificAddress: row[11], 
              previousSchool: row[12],
              parentWaNumber: String(row[13]).replace(/'/g, ""),
-             // Parent Info
              fatherName: row[18],
              fatherEducation: row[19],
              fatherOccupation: row[20],
@@ -203,7 +229,6 @@ function handleLoginStudent(ss, data) {
              motherEducation: row[23],
              motherOccupation: row[24],
              motherIncome: row[25],
-             // Guardian Info
              hasGuardian: row[26] && row[26] !== '-' ? true : false,
              guardianName: row[26] === '-' ? '' : row[26],
              guardianEducation: row[27] === '-' ? '' : row[27],
@@ -221,7 +246,6 @@ function handleLoginStudent(ss, data) {
       }
     }
     
-    // Partial (Registered but not full form)
     return responseJSON({ result: "success", status: "partial", data: userFound });
   } else {
     return responseJSON({ result: "error", message: "NIK atau Token salah." });
@@ -251,10 +275,15 @@ function handleRegister(ss, data) {
   var regId = "REG-" + Utilities.formatDate(new Date(), "Asia/Jakarta", "yyMMddHHmmss");
   var token = generateToken();
   
-  // Note: For production, uncomment and ensure uploadFileToDrive is present if needed, 
-  // or keep mocking if testing logic.
-  // var fileUrl = uploadFileToDrive(data.buktiPembayaranBase64, data.buktiPembayaranMime, ...);
-  var fileUrl = "DRIVE_FILE_PENDING"; 
+  // FIX: UPLOAD FILE KE DRIVE DENGAN FORMAT NAMA BARU
+  var fileUrl = "DRIVE_FILE_PENDING";
+  if (data.buktiPembayaranBase64) {
+      var ext = getExtension(data.buktiPembayaranMime);
+      var safeName = sanitizeFilename(data.fullName);
+      // Format: BUKTI_BAYAR_NamaSantri (Jenjang belum ada di tahap ini)
+      var fileName = "BUKTI_BAYAR_" + safeName + ext;
+      fileUrl = uploadFileToDrive(data.buktiPembayaranBase64, data.buktiPembayaranMime, fileName, FOLDER_ID);
+  }
 
   sheet.appendRow([
     new Date(), 
@@ -272,12 +301,92 @@ function handleRegister(ss, data) {
   return responseJSON({ result: "success", id: regId });
 }
 
-// NOTE: You must ensure this writes to all columns expected by Dashboard/Stats
-function handleSubmitFull(ss, data) { 
-    // Stub implementation maintained as requested, but ensure it returns success
-    // You should populate this with actual sheet.appendRow logic for "Data Pendaftar"
-    // to ensure data flows to the dashboard.
-    return responseJSON({result: "success", id: data.regId}); 
+function handleSubmitFull(ss, data) {
+    try {
+        var sheet = getOrCreateSheet(ss, "Data Pendaftar", [
+            "Timestamp", "ID Registrasi", "Sumber Info", "Jenjang", "Jurusan (SMK)", 
+            "Nama Lengkap", "Gender", "NIK", "NISN", "Tempat Lahir", "Tanggal Lahir",
+            "Alamat Lengkap", "Sekolah Asal", "No. WA", "Tinggi", "Berat", "Jml Saudara", "Anak Ke",
+            "Nama Ayah", "Pend. Ayah", "Pek. Ayah", "Penghasilan Ayah",
+            "Nama Ibu", "Pend. Ibu", "Pek. Ibu", "Penghasilan Ibu",
+            "Nama Wali", "Pend. Wali", "Pek. Wali", "Penghasilan Wali",
+            "Link KK", "Link Akta", "Link KTP", "Link Foto", "Link Ijazah",
+            "Status Data", "Catatan Admin", "Diverifikasi Oleh"
+        ]);
+
+        // PREPARE FILE NAMES: (Jenis)_Nama Santri_Jenjang
+        var safeName = sanitizeFilename(data.fullName);
+        var safeJenjang = sanitizeFilename(data.schoolChoice);
+
+        var kkName = "KK_" + safeName + "_" + safeJenjang + getExtension(data.kartuKeluargaMime);
+        var aktaName = "AKTA_" + safeName + "_" + safeJenjang + getExtension(data.aktaKelahiranMime);
+        var ktpName = "KTP_ORTU_" + safeName + "_" + safeJenjang + getExtension(data.ktpWalimuridMime);
+        var fotoName = "FOTO_" + safeName + "_" + safeJenjang + getExtension(data.pasFotoMime);
+        var ijazahName = "IJAZAH_" + safeName + "_" + safeJenjang + getExtension(data.ijazahMime);
+
+        // Upload Dokumen Pendukung
+        var kkUrl = uploadFileToDrive(data.kartuKeluargaBase64, data.kartuKeluargaMime, kkName, FOLDER_ID);
+        var aktaUrl = uploadFileToDrive(data.aktaKelahiranBase64, data.aktaKelahiranMime, aktaName, FOLDER_ID);
+        var ktpUrl = uploadFileToDrive(data.ktpWalimuridBase64, data.ktpWalimuridMime, ktpName, FOLDER_ID);
+        var fotoUrl = uploadFileToDrive(data.pasFotoBase64, data.pasFotoMime, fotoName, FOLDER_ID);
+        var ijazahUrl = uploadFileToDrive(data.ijazahBase64, data.ijazahMime, ijazahName, FOLDER_ID);
+
+        // Format Alamat Lengkap
+        var fullAddress = (data.specificAddress || "") + ", RT " + (data.rt || "") + "/RW " + (data.rw || "") + 
+                          ", Ds. " + (data.village || "") + ", Kec. " + (data.district || "") + 
+                          ", " + (data.city || "") + ", " + (data.province || "") + " (" + (data.postalCode || "") + ")";
+
+        var jobAyah = data.fatherOccupation === "Lainnya..." ? data.fatherOccupationOther : data.fatherOccupation;
+        var jobIbu = data.motherOccupation === "Lainnya..." ? data.motherOccupationOther : data.motherOccupation;
+        var jobWali = data.hasGuardian ? (data.guardianOccupation === "Lainnya..." ? data.guardianOccupationOther : data.guardianOccupation) : "-";
+
+        var rowData = [
+            new Date(),
+            data.regId,
+            (data.infoSource || []).join(','),
+            data.schoolChoice,
+            data.smkMajor || "-",
+            data.fullName,
+            data.gender,
+            "'" + data.nik,
+            "'" + (data.nisn || "-"),
+            data.birthPlace,
+            "'" + data.birthDate,
+            fullAddress,
+            data.previousSchool,
+            "'" + data.parentWaNumber,
+            data.height,
+            data.weight,
+            data.siblingCount,
+            data.childOrder,
+            data.fatherName,
+            data.fatherEducation,
+            jobAyah,
+            data.fatherIncome,
+            data.motherName,
+            data.motherEducation,
+            jobIbu,
+            data.motherIncome,
+            data.hasGuardian ? data.guardianName : "-",
+            data.hasGuardian ? data.guardianEducation : "-",
+            jobWali,
+            data.hasGuardian ? data.guardianIncome : "-",
+            kkUrl,
+            aktaUrl,
+            ktpUrl,
+            fotoUrl,
+            ijazahUrl,
+            "Pending Verifikasi", 
+            "-", 
+            "-" 
+        ];
+
+        sheet.appendRow(rowData);
+        
+        return responseJSON({ result: "success", id: data.regId });
+    } catch (e) {
+        return responseJSON({ result: "error", message: "Gagal menyimpan data lengkap: " + e.toString() });
+    }
 }
 
 function handleAdminLogin(ss, username, password) {
@@ -353,6 +462,31 @@ function handleGetStats(ss, role) {
     }
   }
 
+  var initData = [];
+  if (roleLower.includes('administrasi full')) {
+      var sheetInit = ss.getSheetByName("Registrasi Awal");
+      if (sheetInit) {
+          var rowsInit = sheetInit.getDataRange().getValues();
+          for(var j=1; j<rowsInit.length; j++) {
+              var rInit = rowsInit[j];
+              if(checkAccess(roleLower, '', rInit[6])) { 
+                  initData.push({
+                      timestamp: rInit[0],
+                      id: rInit[1],
+                      token: String(rInit[2]).replace(/'/g, ''),
+                      infoSource: String(rInit[3]),
+                      fullName: rInit[4],
+                      nik: String(rInit[5]).replace(/'/g, ''),
+                      gender: rInit[6],
+                      whatsapp: String(rInit[7]).replace(/'/g, ''),
+                      paymentProof: rInit[8],
+                      verificationStatus: rInit[9]
+                  });
+              }
+          }
+      }
+  }
+
   return responseJSON({
     result: "success",
     stats: {
@@ -360,7 +494,8 @@ function handleGetStats(ss, role) {
       schoolStats: objToSortedArray(stats.schoolCounts, 10),
       surveyStats: objToSortedArray(stats.surveyCounts, 100),
       trendStats: trendMapToArray(stats.trendCounts)
-    }
+    },
+    initialData: initData
   });
 }
 
@@ -460,7 +595,6 @@ function handleBulkUpdateStatus(ss, data) {
   var verifierRanges = [];
   var notesRanges = [];
 
-  // Default cols based on V7 structure
   var colStatus = 36; 
   var colNotes = 37;
   var colVerifier = 38;
