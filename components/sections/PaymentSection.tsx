@@ -39,14 +39,14 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
     const parseRp = (str: string) => parseInt(str.replace(/\./g, ''), 10);
 
     // --- DATA BIAYA PONDOK (ALL LEVELS) ---
+    // Update: Removed "Pendaftaran" row and recalculated totals
     const pondokCostData = {
         items: [
-            { name: "Pendaftaran", gel1: "150.000", gel2: "250.000", gel3: "350.000" },
             { name: "Almari", gel1: "350.000", gel2: "350.000", gel3: "350.000" },
             { name: "Kitab", gel1: "200.000", gel2: "200.000", gel3: "200.000" },
             { name: "Seragam", gel1: "300.000", gel2: "300.000", gel3: "300.000" },
         ],
-        totals: { gel1: "1.000.000", gel2: "1.100.000", gel3: "1.200.000" }
+        totals: { gel1: "850.000", gel2: "850.000", gel3: "850.000" }
     };
 
     // --- DATA BIAYA SEKOLAH (SMP) ---
@@ -55,7 +55,6 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
         const uniformPriceNum = isMale ? 750000 : 776000;
         const bukuPriceNum = 130000;
         
-        // REVISI: Hapus Pendaftaran (50k). Hanya Buku + Seragam.
         const grandTotalNum = bukuPriceNum + uniformPriceNum; 
 
         return {
@@ -77,12 +76,9 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
     // --- DATA BIAYA SEKOLAH (SMK) ---
     const getSmkCostData = () => {
         const isMale = gender === Gender.LakiLaki;
-        // Biaya Seragam: Putra 706.000, Putri 736.000
         const uniformPriceNum = isMale ? 706000 : 736000;
         const bukuPriceNum = 135000;
         
-        // Pendaftaran 50.000 tidak dimasukkan disini karena sudah dibayar di Token (Step 1)
-        // Total = Buku + Seragam
         const grandTotalNum = bukuPriceNum + uniformPriceNum; 
 
         return {
@@ -111,18 +107,16 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
     const showSchoolCost = [SchoolLevel.MI, SchoolLevel.SMP, SchoolLevel.SMK].includes(schoolLevel);
 
     // --- CALCULATE GRAND TOTAL (PONDOK + SEKOLAH) ---
-    // 1. Get Pondok Cost based on current active wave (or active tab in mobile)
     const currentWave = activeWave || 1; 
     const pondokTotalStr = currentWave === 1 ? pondokCostData.totals.gel1 : currentWave === 2 ? pondokCostData.totals.gel2 : pondokCostData.totals.gel3;
     const pondokTotalNum = parseRp(pondokTotalStr);
 
-    // 2. Get School Cost
+    // Update MI Cost to 250.000
     let schoolTotalNum = 0;
-    if (isMI) schoolTotalNum = 300000;
+    if (isMI) schoolTotalNum = 250000;
     if (isSMP) schoolTotalNum = smpData.totalNum;
     if (isSMK) schoolTotalNum = smkData.totalNum;
 
-    // 3. Sum
     const grandTotalAll = pondokTotalNum + schoolTotalNum;
 
 
@@ -138,9 +132,7 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                 </div>
             </div>
 
-            {/* =================================================================================
-                TABLE 1: RINCIAN BIAYA PONDOK PESANTREN (ALL LEVELS)
-               ================================================================================= */}
+            {/* --- TABLE 1: RINCIAN BIAYA PONDOK PESANTREN --- */}
             <div className="space-y-4">
                 <div className="hidden sm:block overflow-hidden rounded-xl border border-stone-200 shadow-sm relative">
                     <div className="bg-emerald-800 px-4 py-3 text-white text-center">
@@ -157,7 +149,7 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                                             <div className={activeWave === wave ? "mt-2" : ""}>
                                                 <span className="font-bold text-sm block">GELOMBANG {wave}</span>
                                                 <span className="text-[10px] font-normal block opacity-90 mt-0.5">
-                                                    {wave === 1 ? 'Januari - Maret' : wave === 2 ? 'April - Mei' : 'Juni - Juli'}
+                                                    {wave === 1 ? 'Desember - Januari 2026' : wave === 2 ? 'Februari - Maret 2026' : 'April - Juni 2026'}
                                                 </span>
                                             </div>
                                         </th>
@@ -234,9 +226,7 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                 </div>
             </div>
 
-            {/* =================================================================================
-                TABLE 2: RINCIAN BIAYA SEKOLAH (MI / SMP / SMK ONLY)
-               ================================================================================= */}
+            {/* --- TABLE 2: RINCIAN BIAYA SEKOLAH --- */}
             {showSchoolCost && (
                 <div className="space-y-4 animate-fade-up">
                      <div className="bg-indigo-900 px-4 py-3 text-white text-center rounded-t-xl shadow-sm">
@@ -251,10 +241,10 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                              <div className="p-6 text-center">
                                 <div className="flex justify-between items-center border-b border-stone-100 pb-4 mb-4">
                                     <span className="text-stone-600 font-bold">Seragam Sekolah & Raport</span>
-                                    <span className="text-xl font-bold text-indigo-700">Rp. 300.000</span>
+                                    <span className="text-xl font-bold text-indigo-700">Rp. 250.000</span>
                                 </div>
                                 <div className="bg-indigo-50 p-4 rounded-lg">
-                                    <p className="font-bold text-indigo-900">Total Biaya Sekolah: Rp. 300.000</p>
+                                    <p className="font-bold text-indigo-900">Total Biaya Sekolah: Rp. 250.000</p>
                                 </div>
                              </div>
                         )}
@@ -295,7 +285,7 @@ const PaymentSection: React.FC<Props> = ({ activeWave, schoolLevel, gender }) =>
                 </div>
             )}
             
-            {/* --- GRAND TOTAL SECTION (PONDOK + SEKOLAH) --- */}
+            {/* --- GRAND TOTAL SECTION --- */}
             {grandTotalAll > 0 && (
                 <div className="bg-stone-900 text-white p-6 sm:p-8 rounded-2xl shadow-xl border border-stone-700 flex flex-col sm:flex-row justify-between items-center gap-4 animate-fade-up">
                     <div className="text-center sm:text-left">

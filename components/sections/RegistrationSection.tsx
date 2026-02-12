@@ -137,7 +137,7 @@ const RegistrationSection: React.FC<Props> = ({
                 </div>
             </div>
 
-            {/* Step 3: Pembayaran Token Formulir (Specific 100k) */}
+            {/* Step 3: Pembayaran Token Formulir (Specific 200k) */}
             <div className="space-y-6">
                 <div className="flex items-center gap-4 border-b border-stone-200 pb-4 mt-6">
                     <div className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center text-blue-700">
@@ -149,11 +149,11 @@ const RegistrationSection: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* Cost Card 100k */}
+                {/* Cost Card 200k */}
                 <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
                     <div className="bg-stone-900 text-white p-4 flex justify-between items-center">
                         <span className="text-sm font-bold uppercase tracking-widest text-stone-300">TOTAL BIAYA FORMULIR</span>
-                        <span className="text-xl font-black text-emerald-400">Rp. 100.000</span>
+                        <span className="text-xl font-black text-emerald-400">Rp. 200.000</span>
                     </div>
                     <div className="p-4 bg-stone-50 text-xs text-stone-500 space-y-1">
                         <div className="flex justify-between border-b border-stone-200 pb-1">
@@ -162,7 +162,7 @@ const RegistrationSection: React.FC<Props> = ({
                         </div>
                         <div className="flex justify-between">
                             <span>Formulir Pondok</span>
-                            <span>Rp. 50.000</span>
+                            <span>Rp. 150.000</span>
                         </div>
                     </div>
                 </div>
@@ -191,7 +191,7 @@ const RegistrationSection: React.FC<Props> = ({
                 {/* Upload Bukti */}
                 <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200 shadow-sm">
                      <FileInput 
-                        label="Upload Bukti Transfer (Rp 100.000)" 
+                        label="Upload Bukti Transfer (Rp 200.000)" 
                         id="buktiPembayaran" 
                         name="buktiPembayaran" 
                         onChange={handleFileChange} 
@@ -209,7 +209,7 @@ const RegistrationSection: React.FC<Props> = ({
             <div className="space-y-4">
                 <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-stone-200 bg-stone-50">
                     <input type="checkbox" name="termsAgreed" checked={formData.termsAgreed} onChange={handleChange} className="mt-1 w-5 h-5 text-emerald-600 rounded" />
-                    <span className="text-xs text-stone-600 font-medium">Saya menyatakan data awal ini benar dan telah melakukan transfer sebesar Rp 100.000 untuk pembelian formulir.</span>
+                    <span className="text-xs text-stone-600 font-medium">Saya menyatakan data awal ini benar dan telah melakukan transfer sebesar Rp 200.000 untuk pembelian formulir.</span>
                 </label>
                 {errors.termsAgreed && <p className="text-xs text-red-500 font-bold">{errors.termsAgreed}</p>}
                 
