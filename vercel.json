@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "GOOGLE_SHEET_URL": "https://script.google.com/macros/s/AKfycbyZJDWxfVViSiCQpF2iPd_WQW0AWtd_WM30MUuTT28D4ERpzp1Ml_oh_yN-nQGoB7e0dg/exec"
+  }
+}
