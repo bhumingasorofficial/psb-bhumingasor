@@ -17,7 +17,7 @@ import Stepper from './components/Stepper';
 import Toast, { ToastMessage, ToastType } from './components/Toast';
 
 // --- CONFIG ---
-const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyZJDWxfVViSiCQpF2iPd_WQW0AWtd_WM30MUuTT28D4ERpzp1Ml_oh_yN-nQGoB7e0dg/exec'; 
+const GOOGLE_SHEET_URL = '/api/proxy'; // Gunakan proxy Vercel
 const LOGO_URL = 'https://github.com/bhumingasorofficial/asset-bhumingasor/blob/bb73c4a939d695cbe48e58d7ea869977bdc57acd/Logo%20Yayasan%20Pondok%20Pesantren%20Bhumi%20Ngasor.png?raw=true';
 const WA_NUMBER_HELP = '6281333123600';   
 
@@ -405,23 +405,23 @@ const App: React.FC = () => {
                 turnstileToken: turnstileToken
             };
 
-            // PERBAIKAN: Hapus mode: 'no-cors' agar bisa baca response
+            // Gunakan proxy Vercel (no CORS issue)
             const response = await fetch(GOOGLE_SHEET_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
 
-            // Cek apakah response berhasil
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Parse response dari backend
             const result = await response.json();
             
             if (result.result === 'success') {
-                setRegSuccessId(result.id || regData.nik);
+                setRegSuccessId(regData.nik);
                 setSuccessType('registration');
                 setView('success');
                 addToast('success', 'Berhasil!', 'Pendaftaran awal berhasil dikirim.');
@@ -572,19 +572,19 @@ const App: React.FC = () => {
 
             setLoadingMessage('Mengirim Semua Data ke Server... (Mohon Tunggu 10-30 Detik)');
 
-            // PERBAIKAN: Hapus mode: 'no-cors' agar bisa baca response
+            // Gunakan proxy Vercel (no CORS issue)
             const response = await fetch(GOOGLE_SHEET_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
 
-            // Cek apakah response berhasil
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Parse response dari backend
             const result = await response.json();
             
             if (result.result === 'success') {
