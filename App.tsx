@@ -405,21 +405,32 @@ const App: React.FC = () => {
                 turnstileToken: turnstileToken
             };
 
-            await fetch(GOOGLE_SHEET_URL, {
-                method: 'POST', mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
+            // PERBAIKAN: Hapus mode: 'no-cors' agar bisa baca response
+            const response = await fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            await new Promise(r => setTimeout(r, 3000));
-            setRegSuccessId(regData.nik);
+            // Cek apakah response berhasil
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Parse response dari backend
+            const result = await response.json();
             
-            // SET SUCCESS TYPE TO REGISTRATION
-            setSuccessType('registration');
-            setView('success');
+            if (result.result === 'success') {
+                setRegSuccessId(result.id || regData.nik);
+                setSuccessType('registration');
+                setView('success');
+                addToast('success', 'Berhasil!', 'Pendaftaran awal berhasil dikirim.');
+            } else {
+                throw new Error(result.message || 'Gagal menyimpan data');
+            }
         } catch (e) {
             console.error(e);
-            addToast('error', 'Server Error', 'Gagal menghubungi server.');
+            addToast('error', 'Server Error', 'Gagal menghubungi server: ' + (e as Error).message);
         } finally { setLoading(false); }
     };
 
@@ -561,22 +572,32 @@ const App: React.FC = () => {
 
             setLoadingMessage('Mengirim Semua Data ke Server... (Mohon Tunggu 10-30 Detik)');
 
-            await fetch(GOOGLE_SHEET_URL, {
-                method: 'POST', mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
+            // PERBAIKAN: Hapus mode: 'no-cors' agar bisa baca response
+            const response = await fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            localStorage.removeItem(AUTOSAVE_KEY);
+            // Cek apakah response berhasil
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Parse response dari backend
+            const result = await response.json();
             
-            setLoadingMessage('Menyimpan Data...');
-            await new Promise(r => setTimeout(r, 4000));
-            addToast('success', 'Berhasil', 'Data lengkap disimpan.');
-            
-            setSuccessType('full-form');
-            setView('success');
+            if (result.result === 'success') {
+                localStorage.removeItem(AUTOSAVE_KEY);
+                addToast('success', 'Berhasil', 'Data lengkap disimpan.');
+                setSuccessType('full-form');
+                setView('success');
+            } else {
+                throw new Error(result.message || 'Gagal menyimpan data lengkap');
+            }
         } catch (e) {
-            addToast('error', 'Gagal Menyimpan', 'Terjadi kesalahan jaringan.');
+            console.error(e);
+            addToast('error', 'Gagal Menyimpan', 'Terjadi kesalahan: ' + (e as Error).message);
         } finally { setLoading(false); }
     };
 
